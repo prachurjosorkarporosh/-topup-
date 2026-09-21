@@ -23,24 +23,32 @@ function checkAdminAccess(user) {
 
 auth.onAuthStateChanged(user => {
     if(user) {
-        // Verify user is authorized admin
-        db.collection("admins").doc(user.uid).get().then(doc => {
-            const isDocAdmin = doc.exists;
-            const isEmailAdmin = checkAdminAccess(user);
+        const isEmailAdmin = checkAdminAccess(user);
+        
+        // If email matches hardcoded admin emails, grant immediate access and sync doc
+        if(isEmailAdmin) {
+            document.getElementById('login-sec').classList.add('hidden');
+            document.getElementById('admin-panel').classList.remove('hidden');
             
-            if(isEmailAdmin || isDocAdmin) {
-                // Ensure document exists in admins collection for fast rule checks
-                if(!isDocAdmin) {
-                    db.collection("admins").doc(user.uid).set({
-                        email: user.email,
-                        role: 'admin',
-                        grantedAt: new Date()
-                    }).catch(e => console.log('Admin registration sync:', e));
-                }
+            // Ensure document exists in admins collection for security rules
+            db.collection("admins").doc(user.uid).set({
+                email: user.email,
+                role: 'admin',
+                grantedAt: new Date()
+            }, { merge: true }).catch(e => console.log('Admin registration sync:', e));
+
+            loadAllData();
+            return;
+        }
+
+        // Otherwise check admins collection
+        db.collection("admins").doc(user.uid).get().then(doc => {
+            if(doc.exists) {
                 document.getElementById('login-sec').classList.add('hidden');
                 document.getElementById('admin-panel').classList.remove('hidden');
                 loadAllData();
             } else {
+                cleanupListeners();
                 auth.signOut().then(() => {
                     Swal.fire({
                         icon: 'error',
@@ -50,22 +58,22 @@ auth.onAuthStateChanged(user => {
                 });
             }
         }).catch(err => {
-            if(checkAdminAccess(user)) {
-                document.getElementById('login-sec').classList.add('hidden');
-                document.getElementById('admin-panel').classList.remove('hidden');
-                loadAllData();
-            } else {
-                auth.signOut().then(() => {
-                    Swal.fire('Error', 'Unauthorized admin account', 'error');
-                });
-            }
+            console.error('Admin check error:', err);
+            cleanupListeners();
+            auth.signOut().then(() => {
+                Swal.fire('Error', 'Unauthorized admin account or permission issue', 'error');
+            });
         });
     } else {
+        cleanupListeners();
         document.getElementById('login-sec').classList.remove('hidden');
         document.getElementById('admin-panel').classList.add('hidden');
     }
 });
-function logout() { auth.signOut().then(() => location.reload()); }
+function logout() { 
+    cleanupListeners();
+    auth.signOut().then(() => location.reload()); 
+}
 
 function nav(tabName) {
     if(tabName !== 'games') closeProductManager();
@@ -81,11 +89,33 @@ function nav(tabName) {
     activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
 }
 
-function loadAllData() { fetchDeposits(); fetchUserOrders(); fetchUsers(); fetchGames(); fetchBanners(); fetchTutorials(); fetchSettings(); }
+// Track listeners to unsubscribe when logged out or re-authenticating
+const activeUnsubscribers = [];
+function cleanupListeners() {
+    while (activeUnsubscribers.length > 0) {
+        try {
+            const unsub = activeUnsubscribers.pop();
+            if (typeof unsub === 'function') unsub();
+        } catch (e) {
+            console.warn('Error unsubscribing:', e);
+        }
+    }
+}
+
+function loadAllData() { 
+    cleanupListeners();
+    fetchDeposits(); 
+    fetchUserOrders(); 
+    fetchUsers(); 
+    fetchGames(); 
+    fetchBanners(); 
+    fetchTutorials(); 
+    fetchSettings(); 
+}
 
 // --- DEPOSITS ---
 function fetchDeposits() {
-    db.collection("deposits").where("status", "==", "pending").onSnapshot(snapshot => {
+    const unsub = db.collection("deposits").where("status", "==", "pending").onSnapshot(snapshot => {
         const list = document.getElementById('deposit-list');
         list.innerHTML = "";
         document.getElementById('count-pending-dep').innerText = snapshot.size;
@@ -109,7 +139,12 @@ function fetchDeposits() {
                 </div>
             </div>`;
         });
+    }, err => {
+        console.warn("fetchDeposits listener status:", err.message);
+        const list = document.getElementById('deposit-list');
+        if(list) list.innerHTML = `<div class="text-center py-8 text-xs text-gray-400">Waiting for deposit permissions...</div>`;
     });
+    activeUnsubscribers.push(unsub);
 }
 function approveDeposit(docId, userId, amount) {
     Swal.fire({ title: 'Approve?', text: `Adding ৳${amount}`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes' }).then((res) => {
@@ -128,7 +163,7 @@ function rejectDeposit(docId) { if(confirm("Reject this?")) db.collection("depos
 
 // --- ORDERS ---
 function fetchUserOrders() {
-    db.collection("orders").where("status", "==", "pending").onSnapshot(snapshot => {
+    const unsub = db.collection("orders").where("status", "==", "pending").onSnapshot(snapshot => {
         const list = document.getElementById('user-orders-list');
         list.innerHTML = "";
         document.getElementById('count-pending-ord').innerText = snapshot.size;
@@ -162,7 +197,12 @@ function fetchUserOrders() {
                 </div>
             </div>`;
         });
+    }, err => {
+        console.warn("fetchUserOrders listener status:", err.message);
+        const list = document.getElementById('user-orders-list');
+        if(list) list.innerHTML = `<div class="text-center py-8 text-xs text-gray-400">Waiting for orders permissions...</div>`;
     });
+    activeUnsubscribers.push(unsub);
 }
 function completeOrder(docId) {
     Swal.fire({ title: 'Mark Success?', icon: 'question', showCancelButton: true, confirmButtonText: 'Yes' }).then(res => {
@@ -186,11 +226,14 @@ function refundOrder(docId, userId, amount) {
 // --- USERS SECTION (NEW) ---
 let allUsers = []; 
 function fetchUsers() {
-    db.collection("users").onSnapshot(snap => {
+    const unsub = db.collection("users").onSnapshot(snap => {
         allUsers = [];
         snap.forEach(doc => { allUsers.push({ id: doc.id, ...doc.data() }); });
         renderUsers(allUsers);
+    }, err => {
+        console.warn("fetchUsers listener:", err.message);
     });
+    activeUnsubscribers.push(unsub);
 }
 function renderUsers(usersArray) {
     const list = document.getElementById('users-list');
@@ -233,7 +276,7 @@ function viewUserDetails(uid) {
     // Count Total Completed Orders
     db.collection("orders").where("userId", "==", uid).where("status", "==", "success").get().then(snap => {
         document.getElementById('modal-user-orders').innerText = snap.size;
-    });
+    }).catch(err => console.warn("Order count err:", err.message));
 }
 function closeUserModal() {
     document.getElementById('user-modal').classList.add('hidden');
@@ -252,8 +295,6 @@ function updateUserBalance() {
     }).then(() => {
         Swal.fire({ toast: true, icon: 'success', title: 'Balance Updated', position: 'top', showConfirmButton: false, timer: 1500 });
         document.getElementById('balance-amount').value = "";
-        // Modal will auto-update via onSnapshot listener in fetchUsers
-        // But we update the text manually for instant feel
         const oldBal = parseInt(document.getElementById('modal-user-bal').innerText);
         document.getElementById('modal-user-bal').innerText = oldBal + amount;
     }).catch(e => Swal.fire('Error', e.message, 'error'));
@@ -263,7 +304,7 @@ function updateUserBalance() {
 // --- GAMES & PRODUCTS ---
 let currentEditingGameId = null;
 function fetchGames() {
-    db.collection("services").onSnapshot(snap => {
+    const unsub = db.collection("services").onSnapshot(snap => {
         const grid = document.getElementById('games-grid');
         grid.innerHTML = "";
         if(snap.empty) { grid.innerHTML = `<div class="text-center py-8 text-gray-400">No games found.</div>`; return; }
@@ -279,7 +320,10 @@ function fetchGames() {
                 </div>
             </div>`;
         });
+    }, err => {
+        console.warn("fetchGames listener:", err.message);
     });
+    activeUnsubscribers.push(unsub);
 }
 function addGame() {
     const name = document.getElementById('new-game-name').value;
@@ -294,6 +338,7 @@ function addGame() {
 }
 function deleteGame(id) { Swal.fire({ title: 'Delete Game?', text: "This deletes all products inside it!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Delete' }).then((res) => { if(res.isConfirmed) db.collection("services").doc(id).delete(); }); }
 
+let productSub = null;
 function manageProducts(gameId, gameName) {
     currentEditingGameId = gameId;
     document.getElementById('games-main-view').classList.add('hidden');
@@ -301,9 +346,21 @@ function manageProducts(gameId, gameName) {
     document.getElementById('pm-game-title').innerText = gameName;
     fetchProducts(gameId);
 }
-function closeProductManager() { currentEditingGameId = null; document.getElementById('products-manager-view').classList.add('hidden'); document.getElementById('games-main-view').classList.remove('hidden'); }
+function closeProductManager() { 
+    if (typeof productSub === 'function') {
+        productSub();
+        productSub = null;
+    }
+    currentEditingGameId = null; 
+    document.getElementById('products-manager-view').classList.add('hidden'); 
+    document.getElementById('games-main-view').classList.remove('hidden'); 
+}
 function fetchProducts(gameId) {
-    db.collection("services").doc(gameId).collection("products").orderBy('price', 'asc').onSnapshot(snap => {
+    if (typeof productSub === 'function') {
+        productSub();
+        productSub = null;
+    }
+    productSub = db.collection("services").doc(gameId).collection("products").orderBy('price', 'asc').onSnapshot(snap => {
         const list = document.getElementById('products-list');
         list.innerHTML = "";
         if(snap.empty) { list.innerHTML = `<div class="text-center py-5 opacity-50"><p class="text-xs text-gray-500">No products added yet.</p></div>`; return; }
@@ -315,6 +372,8 @@ function fetchProducts(gameId) {
                 <button onclick="db.collection('services').doc('${gameId}').collection('products').doc('${doc.id}').delete()" class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center"><i class="fas fa-trash-alt text-xs"></i></button>
             </div>`;
         });
+    }, err => {
+        console.warn("fetchProducts listener:", err.message);
     });
 }
 function addProduct() {
@@ -328,22 +387,28 @@ function addProduct() {
 
 // --- BANNERS ---
 function fetchBanners() {
-    db.collection("banners").onSnapshot(snap => {
+    const unsub = db.collection("banners").onSnapshot(snap => {
         const list = document.getElementById('banners-list'); list.innerHTML = "";
         snap.forEach(doc => { list.innerHTML += `<div class="relative h-24 rounded-lg overflow-hidden bg-gray-100 border"><img src="${doc.data().image}" class="w-full h-full object-cover"><button onclick="db.collection('banners').doc('${doc.id}').delete()" class="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs"><i class="fas fa-times"></i></button></div>`; });
+    }, err => {
+        console.warn("fetchBanners listener:", err.message);
     });
+    activeUnsubscribers.push(unsub);
 }
 function addBanner() { const url = document.getElementById('new-banner-url').value; if(url) db.collection("banners").add({ image: url }).then(() => document.getElementById('new-banner-url').value = ""); }
 
 // --- TUTORIALS ---
 function fetchTutorials() {
-    db.collection("tutorials").onSnapshot(snap => {
+    const unsub = db.collection("tutorials").onSnapshot(snap => {
         const list = document.getElementById('tutorials-list'); list.innerHTML = "";
         snap.forEach(doc => {
             const d = doc.data();
             list.innerHTML += `<div class="flex gap-3 bg-white p-2 rounded-lg border relative"><img src="${d.thumbnail}" class="w-16 h-10 object-cover rounded bg-gray-200"><div class="overflow-hidden"><p class="text-xs font-bold truncate">${d.title}</p></div><button onclick="db.collection('tutorials').doc('${doc.id}').delete()" class="absolute right-2 top-2 text-red-400"><i class="fas fa-trash"></i></button></div>`;
         });
+    }, err => {
+        console.warn("fetchTutorials listener:", err.message);
     });
+    activeUnsubscribers.push(unsub);
 }
 function addTutorial() {
     const title = document.getElementById('tut-title').value; const thumb = document.getElementById('tut-thumb').value; const link = document.getElementById('tut-link').value;
@@ -352,14 +417,18 @@ function addTutorial() {
 
 // --- SETTINGS ---
 function fetchSettings() {
-    db.collection("admin").doc("payment").onSnapshot(d => {
+    const unsub1 = db.collection("admin").doc("payment").onSnapshot(d => {
         if(d.exists) {
             document.getElementById('set-bkash').value = d.data().bkash || "";
             document.getElementById('set-nagad').value = d.data().nagad || "";
             document.getElementById('set-rocket').value = d.data().rocket || "";
         }
+    }, err => {
+        console.warn("admin payment settings listener:", err.message);
     });
-    db.collection("settings").doc("general").onSnapshot(d => {
+    activeUnsubscribers.push(unsub1);
+
+    const unsub2 = db.collection("settings").doc("general").onSnapshot(d => {
         if(d.exists) {
             const data = d.data();
             document.getElementById('set-notice').value = data.notice || "";
@@ -370,7 +439,10 @@ function fetchSettings() {
             document.getElementById('set-insta').value = data.instagram || "";
             document.getElementById('set-yt').value = data.youtube || "";
         }
+    }, err => {
+        console.warn("settings general listener:", err.message);
     });
+    activeUnsubscribers.push(unsub2);
 }
 
 function savePayment() {

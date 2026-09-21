@@ -236,6 +236,10 @@
             if(document.getElementById('history-list')) loadHistory();
         } else {
             currentUser = null;
+            if (typeof userDocUnsub === 'function') {
+                userDocUnsub();
+                userDocUnsub = null;
+            }
             checkAdminStatus(null);
             const loginContainer = document.getElementById('header-login-container');
             const balanceContainer = document.getElementById('header-balance-container');
@@ -258,8 +262,13 @@
     // Always load content
     loadAppContent();
 
+    let userDocUnsub = null;
     function loadUserData(uid) {
-        db.collection('users').doc(uid).onSnapshot((doc) => {
+        if (typeof userDocUnsub === 'function') {
+            userDocUnsub();
+            userDocUnsub = null;
+        }
+        userDocUnsub = db.collection('users').doc(uid).onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
                 userBalance = data.balance || 0;
@@ -293,6 +302,8 @@
                     }
                 }
             }
+        }, (error) => {
+            console.warn("User data listener error:", error.message);
         });
     }
 
