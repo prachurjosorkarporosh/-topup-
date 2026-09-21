@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pookie Admin Panel Pro</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+
+<style>
+    body { font-family: 'Poppins', sans-serif; background-color: #f1f5f9; -webkit-tap-highlight-color: transparent; }
+    .nav-active { color: #db2777; position: relative; }
+    .nav-active::after { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: #db2777; border-radius: 50%; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .hidden { display: none !important; }
+    .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    input:focus, textarea:focus { box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.2); }
+</style>
+</head>
+<body class="text-slate-800 pb-20 select-none">
+
+<!-- LOGIN SCREEN -->
+<section id="login-sec" class="min-h-screen flex flex-col items-center justify-center p-6 bg-white z-50 fixed inset-0">
+    <div class="w-full max-w-sm text-center">
+        <div class="w-20 h-20 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-pink-100">
+            <i class="fas fa-user-lock text-3xl text-pink-500"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-1">Admin Access</h2>
+        <form onsubmit="event.preventDefault(); adminLogin();" class="space-y-4 mt-8">
+            <input type="email" id="admin-email" placeholder="Email Address" class="w-full pl-4 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-pink-500">
+            <input type="password" id="admin-pass" placeholder="Password" class="w-full pl-4 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-pink-500">
+            <button type="submit" class="w-full bg-pink-600 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-pink-200 hover:bg-pink-700 transition-all">LOGIN</button>
+        </form>
+    </div>
+</section>
+
+<!-- ADMIN PANEL -->
+<div id="admin-panel" class="hidden min-h-screen max-w-md mx-auto relative bg-slate-50 shadow-2xl overflow-hidden min-h-screen">
+    <header class="bg-white px-5 py-4 flex justify-between items-center sticky top-0 z-30 shadow-sm">
+        <div>
+            <h1 class="font-bold text-lg text-gray-800">Admin<span class="text-pink-500">Panel</span></h1>
+            <p class="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Control Center</p>
+        </div>
+        <button onclick="logout()" class="w-9 h-9 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"><i class="fas fa-power-off text-sm"></i></button>
+    </header>
+
+    <main class="p-4 space-y-4">
+        <!-- 1. DEPOSITS -->
+        <div id="view-deposits" class="fade-in">
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                <div class="bg-pink-600 text-white p-4 rounded-2xl shadow-lg relative overflow-hidden">
+                    <p class="text-pink-100 text-xs font-medium mb-1">Pending Deposits</p>
+                    <h2 class="text-3xl font-bold" id="count-pending-dep">0</h2>
+                </div>
+                <div class="bg-white text-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+                    <p class="text-gray-400 text-xs font-medium mb-1">Pending Orders</p>
+                    <h2 class="text-3xl font-bold" id="count-pending-ord">0</h2>
+                </div>
+            </div>
+            <div class="flex justify-between items-end mb-3 px-1"><h3 class="font-bold text-gray-700">Money Requests</h3><button onclick="fetchDeposits()" class="text-xs text-pink-600 font-bold bg-pink-50 px-2 py-1 rounded"><i class="fas fa-sync-alt mr-1"></i> Refresh</button></div>
+            <div id="deposit-list" class="space-y-3 pb-24"></div>
+        </div>
+
+        <!-- 2. ORDERS -->
+        <div id="view-user-orders" class="hidden fade-in pb-24">
+            <div class="flex justify-between items-end mb-3 px-1"><h3 class="font-bold text-gray-700">Game Orders</h3><button onclick="fetchUserOrders()" class="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded"><i class="fas fa-sync-alt mr-1"></i> Refresh</button></div>
+            <div id="user-orders-list" class="space-y-3"></div>
+        </div>
+
+        <!-- 3. USERS (NEW SECTION) -->
+        <div id="view-users" class="hidden fade-in pb-24">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-gray-700">All Users</h3>
+                <div class="relative">
+                    <input type="text" id="user-search" onkeyup="searchUser()" placeholder="Search Email..." class="bg-white border border-gray-200 pl-8 pr-3 py-1.5 rounded-full text-xs focus:border-pink-500 outline-none w-40">
+                    <i class="fas fa-search absolute left-3 top-2 text-gray-400 text-xs"></i>
+                </div>
+            </div>
+            <div id="users-list" class="space-y-3">
+                <!-- User items will load here -->
+            </div>
+        </div>
+
+        <!-- 4. GAMES -->
+        <div id="view-games" class="hidden fade-in pb-24">
+            <div id="games-main-view">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-4">
+                    <h3 class="font-bold text-gray-800 mb-3"><i class="fas fa-gamepad text-pink-500 mr-2"></i>Create New Game</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="new-game-name" placeholder="Game Name" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm">
+                        <input type="text" id="new-game-img" placeholder="Image URL" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm">
+                        <input type="text" id="new-game-rules" placeholder="Rules (e.g. Only Player ID)" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm">
+                        <button onclick="addGame()" class="w-full bg-gray-800 text-white py-3 rounded-xl font-bold text-sm hover:bg-black transition">Create Game</button>
+                    </div>
+                </div>
+                <div id="games-grid" class="space-y-3"></div>
+            </div>
+            
+            <div id="products-manager-view" class="hidden h-full">
+                <div class="bg-white p-4 rounded-b-2xl shadow-sm border-b border-gray-100 sticky top-0 z-10 flex items-center gap-3 mb-4">
+                    <button onclick="closeProductManager()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition"><i class="fas fa-arrow-left"></i></button>
+                    <div><h3 class="font-bold text-gray-800 text-lg leading-tight" id="pm-game-title">Game Name</h3><p class="text-[10px] text-pink-500 font-bold uppercase">Manage Products</p></div>
+                </div>
+                <div class="bg-pink-50 p-4 rounded-xl border border-pink-100 mx-1 mb-4">
+                    <h4 class="font-bold text-pink-800 text-xs uppercase mb-3">Add Package</h4>
+                    <div class="flex flex-col gap-3">
+                        <input type="text" id="prod-name" placeholder="Package Name" class="w-full bg-white border border-pink-200 p-3 rounded-lg text-sm">
+                        <div class="flex gap-2">
+                            <input type="number" id="prod-price" placeholder="Price" class="w-full bg-white border border-pink-200 p-3 rounded-lg text-sm">
+                            <button onclick="addProduct()" class="bg-pink-600 text-white px-6 rounded-lg text-sm font-bold shadow-md">ADD</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="products-list" class="space-y-2 px-1 pb-10"></div>
+            </div>
+        </div>
+
+        <!-- 5. BANNERS -->
+        <div id="view-banners" class="hidden fade-in pb-24">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-4">
+                <h3 class="font-bold text-gray-800 mb-3">Upload Banner</h3>
+                <div class="flex gap-2">
+                    <input type="text" id="new-banner-url" placeholder="Image URL" class="flex-1 bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm">
+                    <button onclick="addBanner()" class="bg-pink-500 text-white w-12 rounded-xl font-bold shadow-md"><i class="fas fa-plus"></i></button>
+                </div>
+            </div>
+            <div id="banners-list" class="space-y-4"></div>
+        </div>
+
+        <!-- 6. TUTORIALS -->
+        <div id="view-tutorials" class="hidden fade-in pb-24">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-4">
+                <h3 class="font-bold text-gray-800 mb-3">Add Video</h3>
+                <div class="space-y-3">
+                    <input id="tut-title" type="text" placeholder="Title" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm">
+                    <input id="tut-thumb" type="text" placeholder="Thumbnail URL" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm">
+                    <input id="tut-link" type="text" placeholder="YouTube Link" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm">
+                    <button onclick="addTutorial()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold text-sm">Post Video</button>
+                </div>
+            </div>
+            <div id="tutorials-list" class="space-y-3"></div>
+        </div>
+
+        <!-- 7. SETTINGS -->
+        <div id="view-settings" class="hidden fade-in space-y-4 pb-24">
+            <!-- Payment Numbers -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-gray-800 mb-4">Payment Methods</h3>
+                <div class="space-y-3">
+                    <div><label class="text-xs font-bold text-pink-600 ml-1">bKash</label><input type="text" id="set-bkash" class="w-full bg-gray-50 border border-gray-200 p-2.5 rounded-lg text-sm mt-1"></div>
+                    <div><label class="text-xs font-bold text-orange-600 ml-1">Nagad</label><input type="text" id="set-nagad" class="w-full bg-gray-50 border border-gray-200 p-2.5 rounded-lg text-sm mt-1"></div>
+                    <div><label class="text-xs font-bold text-purple-600 ml-1">Rocket</label><input type="text" id="set-rocket" class="w-full bg-gray-50 border border-gray-200 p-2.5 rounded-lg text-sm mt-1"></div>
+                    <button onclick="savePayment()" class="w-full bg-gray-800 text-white py-2.5 rounded-xl font-bold text-sm mt-2">Update Numbers</button>
+                </div>
+            </div>
+
+            <!-- App & Social Config -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-gray-800 mb-4">App & Support Config</h3>
+                
+                <label class="text-xs font-bold text-gray-500 ml-1">Notice Board</label>
+                <textarea id="set-notice" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm mb-3 h-20 resize-none" placeholder="Scrolling Notice"></textarea>
+                
+                <label class="text-xs font-bold text-gray-500 ml-1">App Download Link</label>
+                <input type="text" id="set-app-link" placeholder="Google Drive/Play Store Link" class="w-full bg-gray-50 border border-gray-200 p-2.5 rounded-lg text-sm mb-3">
+                
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="text-xs font-bold text-blue-500 ml-1">Telegram</label>
+                        <input type="text" id="set-telegram" placeholder="Link" class="w-full bg-gray-50 border border-gray-200 p-2.5 rounded-lg text-xs mt-1">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-green-500 ml-1">WhatsApp</label>
+                        <input type="text" id="set-whatsapp" placeholder="Number (+880..)" class="w-full bg-gray-50 border border-gray-200 p-2.5 rounded-lg text-xs mt-1">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 mb-4">
+                    <input type="text" id="set-fb" placeholder="Facebook" class="bg-gray-50 border border-gray-200 p-2.5 rounded-lg text-xs">
+                    <input type="text" id="set-insta" placeholder="Instagram" class="bg-gray-50 border border-gray-200 p-2.5 rounded-lg text-xs">
+                    <input type="text" id="set-yt" placeholder="YouTube" class="bg-gray-50 border border-gray-200 p-2.5 rounded-lg text-xs">
+                </div>
+
+                <button onclick="saveConfig()" class="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold text-sm shadow-md">Save All Config</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- USER DETAILS MODAL -->
+    <div id="user-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm fade-in">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl relative">
+            <button onclick="closeUserModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+            
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-3 text-pink-500 text-2xl font-bold border border-pink-100">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h3 id="modal-user-email" class="font-bold text-gray-800 text-sm break-all">user@email.com</h3>
+                <p class="text-[10px] text-gray-400 uppercase mt-1">User ID: <span id="modal-user-id">...</span></p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-center">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase">Balance</p>
+                    <h4 class="text-xl font-bold text-pink-600">৳<span id="modal-user-bal">0</span></h4>
+                </div>
+                <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-center">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase">Orders</p>
+                    <h4 class="text-xl font-bold text-blue-600" id="modal-user-orders">0</h4>
+                </div>
+            </div>
+
+            <div class="bg-pink-50 p-4 rounded-xl border border-pink-100">
+                <label class="text-[10px] font-bold text-pink-800 uppercase mb-2 block">Add / Remove Balance</label>
+                <div class="flex gap-2">
+                    <input type="number" id="balance-amount" placeholder="Amount" class="w-full bg-white border border-pink-200 px-3 py-2 rounded-lg text-sm outline-none focus:border-pink-500">
+                    <button onclick="updateUserBalance()" class="bg-pink-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md whitespace-nowrap">ADD</button>
+                </div>
+                <p class="text-[10px] text-gray-500 mt-2">* Enter negative amount (e.g. -50) to remove money.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- NAVIGATION -->
+    <nav class="fixed bottom-0 w-full bg-white border-t border-gray-100 pb-safe pt-2 shadow-[0_-5px_20px_rgba(0,0,0,0.03)] z-40 max-w-md mx-auto">
+        <div class="flex overflow-x-auto no-scrollbar items-center px-4 gap-6 pb-2">
+            <button onclick="nav('deposits')" id="btn-deposits" class="nav-active flex flex-col items-center text-gray-400 p-2 min-w-[60px] flex-shrink-0"><i class="fas fa-wallet text-xl mb-1"></i><span class="text-[10px] font-bold">Deposits</span></button>
+            <button onclick="nav('user-orders')" id="btn-user-orders" class="flex flex-col items-center text-gray-400 p-2 min-w-[60px] flex-shrink-0"><i class="fas fa-shopping-bag text-xl mb-1"></i><span class="text-[10px] font-bold">Orders</span></button>
+            <button onclick="nav('users')" id="btn-users" class="flex flex-col items-center text-gray-400 p-2 min-w-[60px] flex-shrink-0"><i class="fas fa-users text-xl mb-1"></i><span class="text-[10px] font-bold">Users</span></button>
+            <button onclick="nav('games')" id="btn-games" class="flex flex-col items-center text-gray-400 p-2 min-w-[60px] flex-shrink-0"><i class="fas fa-gamepad text-xl mb-1"></i><span class="text-[10px] font-bold">Games</span></button>
+            <button onclick="nav('banners')" id="btn-banners" class="flex flex-col items-center text-gray-400 p-2 min-w-[60px] flex-shrink-0"><i class="fas fa-images text-xl mb-1"></i><span class="text-[10px] font-bold">Banners</span></button>
+            <button onclick="nav('tutorials')" id="btn-tutorials" class="flex flex-col items-center text-gray-400 p-2 min-w-[60px] flex-shrink-0"><i class="fas fa-play-circle text-xl mb-1"></i><span class="text-[10px] font-bold">Videos</span></button>
+            <button onclick="nav('settings')" id="btn-settings" class="flex flex-col items-center text-gray-400 p-2 min-w-[60px] flex-shrink-0"><i class="fas fa-cog text-xl mb-1"></i><span class="text-[10px] font-bold">Setup</span></button>
+        </div>
+    </nav>
+</div>
+
+<script>
+const firebaseConfig = { apiKey: "AIzaSyAqqcTyQ9MNrcIvvoGKetEBqredHjFBYc0", authDomain: "amr-topup.firebaseapp.com", databaseURL: "https://amr-topup-default-rtdb.firebaseio.com", projectId: "amr-topup", storageBucket: "amr-topup.firebasestorage.app", messagingSenderId: "432881370246" };
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+function adminLogin() {
+    const email = document.getElementById('admin-email').value;
+    const pass = document.getElementById('admin-pass').value;
+    if(!email || !pass) return Swal.fire('Error', 'Empty Credentials', 'warning');
+    auth.signInWithEmailAndPassword(email, pass).catch(err => Swal.fire('Failed', err.message, 'error'));
+}
+auth.onAuthStateChanged(user => {
+    if(user) { document.getElementById('login-sec').classList.add('hidden'); document.getElementById('admin-panel').classList.remove('hidden'); loadAllData(); } 
+    else { document.getElementById('login-sec').classList.remove('hidden'); document.getElementById('admin-panel').classList.add('hidden'); }
+});
+function logout() { auth.signOut().then(() => location.reload()); }
+
+function nav(tabName) {
+    if(tabName !== 'games') closeProductManager();
+    ['deposits', 'user-orders', 'users', 'games', 'banners', 'tutorials', 'settings'].forEach(t => {
+        document.getElementById('view-' + t).classList.add('hidden');
+        const btn = document.getElementById('btn-' + t);
+        if(btn) { btn.classList.remove('nav-active', 'text-pink-600'); btn.classList.add('text-gray-400'); }
+    });
+    document.getElementById('view-' + tabName).classList.remove('hidden');
+    const activeBtn = document.getElementById('btn-' + tabName);
+    activeBtn.classList.add('nav-active', 'text-pink-600');
+    activeBtn.classList.remove('text-gray-400');
+    activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+}
+
+function loadAllData() { fetchDeposits(); fetchUserOrders(); fetchUsers(); fetchGames(); fetchBanners(); fetchTutorials(); fetchSettings(); }
+
+// --- DEPOSITS ---
+function fetchDeposits() {
+    db.collection("deposits").where("status", "==", "pending").onSnapshot(snapshot => {
+        const list = document.getElementById('deposit-list');
+        list.innerHTML = "";
+        document.getElementById('count-pending-dep').innerText = snapshot.size;
+        if(snapshot.empty) { list.innerHTML = `<div class="text-center py-10 opacity-50"><p>No Requests</p></div>`; return; }
+        
+        let deps = [];
+        snapshot.forEach(doc => deps.push({id: doc.id, ...doc.data()}));
+        deps.sort((a,b) => b.date - a.date); 
+
+        deps.forEach(data => {
+            list.innerHTML += `
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div class="flex justify-between items-start mb-2">
+                    <div><p class="text-[10px] font-bold uppercase text-gray-400">${data.method || 'Bkash/Nagad'}</p><h4 class="font-bold text-lg text-gray-800">৳ ${data.amount}</h4></div>
+                    <span class="bg-gray-100 px-2 py-1 rounded text-[10px] font-mono font-bold">${data.trxId || data.trx_id}</span>
+                </div>
+                <p class="text-xs text-gray-500 mb-3">${data.userEmail || data.userId}</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="rejectDeposit('${data.id}')" class="bg-red-50 text-red-500 py-2 rounded-lg text-xs font-bold">REJECT</button>
+                    <button onclick="approveDeposit('${data.id}', '${data.userId}', ${data.amount})" class="bg-green-500 text-white py-2 rounded-lg text-xs font-bold shadow-md">APPROVE</button>
+                </div>
+            </div>`;
+        });
+    });
+}
+function approveDeposit(docId, userId, amount) {
+    Swal.fire({ title: 'Approve?', text: `Adding ৳${amount}`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes' }).then((res) => {
+        if (res.isConfirmed) {
+            const userRef = db.collection('users').doc(userId);
+            db.runTransaction(async (t) => {
+                const doc = await t.get(userRef);
+                const newBal = (doc.exists ? doc.data().balance : 0) + parseInt(amount);
+                t.update(userRef, { balance: newBal });
+                t.update(db.collection('deposits').doc(docId), { status: "approved" });
+            }).then(() => Swal.fire('Success', 'Balance Added', 'success'));
+        }
+    });
+}
+function rejectDeposit(docId) { if(confirm("Reject this?")) db.collection("deposits").doc(docId).update({ status: "rejected" }); }
+
+// --- ORDERS ---
+function fetchUserOrders() {
+    db.collection("orders").where("status", "==", "pending").onSnapshot(snapshot => {
+        const list = document.getElementById('user-orders-list');
+        list.innerHTML = "";
+        document.getElementById('count-pending-ord').innerText = snapshot.size;
+
+        if(snapshot.empty) { list.innerHTML = `<div class="text-center py-10 opacity-50"><p>No Pending Orders</p></div>`; return; }
+
+        let orders = [];
+        snapshot.forEach(doc => orders.push({id: doc.id, ...doc.data()}));
+        
+        orders.sort((a, b) => {
+            let dateA = a.date && a.date.toDate ? a.date.toDate() : new Date(a.date);
+            let dateB = b.date && b.date.toDate ? b.date.toDate() : new Date(b.date);
+            return dateB - dateA;
+        });
+
+        orders.forEach(d => {
+            list.innerHTML += `
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-l-4 border-l-pink-500 border-gray-100">
+                <div class="flex justify-between items-start mb-1">
+                    <h4 class="font-bold text-sm text-gray-800">${d.productName}</h4>
+                    <span class="font-bold text-pink-600 text-sm">৳${d.price}</span>
+                </div>
+                <p class="text-xs text-gray-500 mb-2 font-bold">${d.gameName}</p>
+                <div class="bg-gray-100 p-2 rounded mb-3">
+                    <p class="text-[10px] text-gray-400 uppercase">Player ID / UID</p>
+                    <p class="font-mono font-bold text-lg select-all">${d.playerId}</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="refundOrder('${d.id}', '${d.userId}', ${d.price})" class="flex-1 bg-red-50 text-red-500 py-2 rounded text-xs font-bold">Refund</button>
+                    <button onclick="completeOrder('${d.id}')" class="flex-1 bg-green-600 text-white py-2 rounded text-xs font-bold shadow">Complete</button>
+                </div>
+            </div>`;
+        });
+    });
+}
+function completeOrder(docId) {
+    Swal.fire({ title: 'Mark Success?', icon: 'question', showCancelButton: true, confirmButtonText: 'Yes' }).then(res => {
+        if(res.isConfirmed) db.collection("orders").doc(docId).update({ status: "success" }).then(()=>Swal.fire('Done', 'Order Completed', 'success'));
+    });
+}
+function refundOrder(docId, userId, amount) {
+    Swal.fire({ title: 'Refund Order?', text: `User will get back ৳${amount}`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Yes, Refund' }).then(res => {
+        if(res.isConfirmed) {
+            const userRef = db.collection('users').doc(userId);
+            db.runTransaction(async (t) => {
+                const doc = await t.get(userRef);
+                const newBal = (doc.exists ? doc.data().balance : 0) + parseInt(amount);
+                t.update(userRef, { balance: newBal });
+                t.update(db.collection('orders').doc(docId), { status: "refunded" });
+            }).then(() => Swal.fire('Refunded', 'Money returned to user', 'success'));
+        }
+    });
+}
+
+// --- USERS SECTION (NEW) ---
+let allUsers = []; 
+function fetchUsers() {
+    db.collection("users").onSnapshot(snap => {
+        allUsers = [];
+        snap.forEach(doc => { allUsers.push({ id: doc.id, ...doc.data() }); });
+        renderUsers(allUsers);
+    });
+}
+function renderUsers(usersArray) {
+    const list = document.getElementById('users-list');
+    list.innerHTML = "";
+    if(usersArray.length === 0) { list.innerHTML = `<div class="text-center py-5 text-gray-400 text-sm">No users found.</div>`; return; }
+    
+    usersArray.forEach(u => {
+        list.innerHTML += `
+        <div class="bg-white p-3 rounded-xl border border-gray-100 flex justify-between items-center shadow-sm">
+            <div class="min-w-0">
+                <p class="font-bold text-sm text-gray-800 truncate">${u.email || 'No Email'}</p>
+                <p class="text-xs text-pink-500 font-bold">Balance: ৳${u.balance || 0}</p>
+            </div>
+            <button onclick="viewUserDetails('${u.id}')" class="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-pink-50 hover:text-pink-600 transition">View</button>
+        </div>`;
+    });
+}
+function searchUser() {
+    const q = document.getElementById('user-search').value.toLowerCase();
+    const filtered = allUsers.filter(u => (u.email && u.email.toLowerCase().includes(q)) || (u.id && u.id.toLowerCase().includes(q)));
+    renderUsers(filtered);
+}
+
+// User Details Modal Logic
+let currentViewUserId = null;
+function viewUserDetails(uid) {
+    currentViewUserId = uid;
+    const user = allUsers.find(u => u.id === uid);
+    if(!user) return;
+
+    document.getElementById('modal-user-email').innerText = user.email || 'No Email';
+    document.getElementById('modal-user-id').innerText = user.id;
+    document.getElementById('modal-user-bal').innerText = user.balance || 0;
+    document.getElementById('balance-amount').value = "";
+    document.getElementById('modal-user-orders').innerText = "...";
+
+    // Show Modal
+    document.getElementById('user-modal').classList.remove('hidden');
+
+    // Count Total Completed Orders
+    db.collection("orders").where("userId", "==", uid).where("status", "==", "success").get().then(snap => {
+        document.getElementById('modal-user-orders').innerText = snap.size;
+    });
+}
+function closeUserModal() {
+    document.getElementById('user-modal').classList.add('hidden');
+    currentViewUserId = null;
+}
+function updateUserBalance() {
+    const amount = parseInt(document.getElementById('balance-amount').value);
+    if(!amount || !currentViewUserId) return;
+
+    const userRef = db.collection('users').doc(currentViewUserId);
+    db.runTransaction(async (t) => {
+        const doc = await t.get(userRef);
+        const currentBal = doc.exists ? (doc.data().balance || 0) : 0;
+        const newBal = currentBal + amount;
+        t.update(userRef, { balance: newBal });
+    }).then(() => {
+        Swal.fire({ toast: true, icon: 'success', title: 'Balance Updated', position: 'top', showConfirmButton: false, timer: 1500 });
+        document.getElementById('balance-amount').value = "";
+        // Modal will auto-update via onSnapshot listener in fetchUsers
+        // But we update the text manually for instant feel
+        const oldBal = parseInt(document.getElementById('modal-user-bal').innerText);
+        document.getElementById('modal-user-bal').innerText = oldBal + amount;
+    }).catch(e => Swal.fire('Error', e.message, 'error'));
+}
+
+
+// --- GAMES & PRODUCTS ---
+let currentEditingGameId = null;
+function fetchGames() {
+    db.collection("services").onSnapshot(snap => {
+        const grid = document.getElementById('games-grid');
+        grid.innerHTML = "";
+        if(snap.empty) { grid.innerHTML = `<div class="text-center py-8 text-gray-400">No games found.</div>`; return; }
+        snap.forEach(doc => {
+            const d = doc.data();
+            grid.innerHTML += `
+            <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center gap-3">
+                <img src="${d.image}" class="w-14 h-14 rounded-lg object-cover bg-gray-50 border">
+                <div class="flex-1 min-w-0"><h4 class="font-bold text-sm text-gray-800 truncate">${d.name}</h4><p class="text-[10px] text-gray-400 truncate">${d.rules || 'Player ID Required'}</p></div>
+                <div class="flex flex-col gap-2">
+                    <button onclick="manageProducts('${doc.id}', '${d.name}')" class="bg-pink-50 text-pink-600 px-3 py-1.5 rounded-lg text-[10px] font-bold">Manage <i class="fas fa-chevron-right ml-1"></i></button>
+                    <button onclick="deleteGame('${doc.id}')" class="text-red-400 text-[10px] font-bold text-right px-1">Delete</button>
+                </div>
+            </div>`;
+        });
+    });
+}
+function addGame() {
+    const name = document.getElementById('new-game-name').value;
+    const img = document.getElementById('new-game-img').value;
+    const rules = document.getElementById('new-game-rules').value;
+    if(!name || !img) return Swal.fire('Missing Info', 'Game Name and Image URL are required', 'warning');
+    db.collection("services").add({ name, image: img, rules: rules || "Enter Player ID" })
+    .then(() => {
+        document.getElementById('new-game-name').value = ""; document.getElementById('new-game-img').value = ""; document.getElementById('new-game-rules').value = "";
+        Swal.fire({toast: true, icon: 'success', title: 'Game Added', position: 'top-end', showConfirmButton: false, timer: 1500});
+    });
+}
+function deleteGame(id) { Swal.fire({ title: 'Delete Game?', text: "This deletes all products inside it!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Delete' }).then((res) => { if(res.isConfirmed) db.collection("services").doc(id).delete(); }); }
+
+function manageProducts(gameId, gameName) {
+    currentEditingGameId = gameId;
+    document.getElementById('games-main-view').classList.add('hidden');
+    document.getElementById('products-manager-view').classList.remove('hidden');
+    document.getElementById('pm-game-title').innerText = gameName;
+    fetchProducts(gameId);
+}
+function closeProductManager() { currentEditingGameId = null; document.getElementById('products-manager-view').classList.add('hidden'); document.getElementById('games-main-view').classList.remove('hidden'); }
+function fetchProducts(gameId) {
+    db.collection("services").doc(gameId).collection("products").orderBy('price', 'asc').onSnapshot(snap => {
+        const list = document.getElementById('products-list');
+        list.innerHTML = "";
+        if(snap.empty) { list.innerHTML = `<div class="text-center py-5 opacity-50"><p class="text-xs text-gray-500">No products added yet.</p></div>`; return; }
+        snap.forEach(doc => {
+            const p = doc.data();
+            list.innerHTML += `
+            <div class="bg-white p-3 rounded-xl border border-gray-100 flex justify-between items-center shadow-sm">
+                <div><p class="text-sm font-bold text-gray-800">${p.name}</p><p class="text-xs font-medium text-pink-600">Price: ৳ ${p.price}</p></div>
+                <button onclick="db.collection('services').doc('${gameId}').collection('products').doc('${doc.id}').delete()" class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center"><i class="fas fa-trash-alt text-xs"></i></button>
+            </div>`;
+        });
+    });
+}
+function addProduct() {
+    if(!currentEditingGameId) return;
+    const name = document.getElementById('prod-name').value;
+    const price = document.getElementById('prod-price').value;
+    if(!name || !price) return Swal.fire('Error', 'Fill all fields', 'warning');
+    db.collection("services").doc(currentEditingGameId).collection("products").add({ name, price: parseInt(price) })
+    .then(() => { document.getElementById('prod-name').value = ""; document.getElementById('prod-price').value = ""; Swal.fire({toast: true, icon: 'success', title: 'Product Added', position: 'top', showConfirmButton: false, timer: 1000}); });
+}
+
+// --- BANNERS ---
+function fetchBanners() {
+    db.collection("banners").onSnapshot(snap => {
+        const list = document.getElementById('banners-list'); list.innerHTML = "";
+        snap.forEach(doc => { list.innerHTML += `<div class="relative h-24 rounded-lg overflow-hidden bg-gray-100 border"><img src="${doc.data().image}" class="w-full h-full object-cover"><button onclick="db.collection('banners').doc('${doc.id}').delete()" class="absolute top-2 right-2 bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs"><i class="fas fa-times"></i></button></div>`; });
+    });
+}
+function addBanner() { const url = document.getElementById('new-banner-url').value; if(url) db.collection("banners").add({ image: url }).then(() => document.getElementById('new-banner-url').value = ""); }
+
+// --- TUTORIALS ---
+function fetchTutorials() {
+    db.collection("tutorials").onSnapshot(snap => {
+        const list = document.getElementById('tutorials-list'); list.innerHTML = "";
+        snap.forEach(doc => {
+            const d = doc.data();
+            list.innerHTML += `<div class="flex gap-3 bg-white p-2 rounded-lg border relative"><img src="${d.thumbnail}" class="w-16 h-10 object-cover rounded bg-gray-200"><div class="overflow-hidden"><p class="text-xs font-bold truncate">${d.title}</p></div><button onclick="db.collection('tutorials').doc('${doc.id}').delete()" class="absolute right-2 top-2 text-red-400"><i class="fas fa-trash"></i></button></div>`;
+        });
+    });
+}
+function addTutorial() {
+    const title = document.getElementById('tut-title').value; const thumb = document.getElementById('tut-thumb').value; const link = document.getElementById('tut-link').value;
+    if(title && link) db.collection("tutorials").add({ title, thumbnail: thumb || '', link }).then(()=>{ Swal.fire({toast:true, icon:'success', title:'Added'}); document.getElementById('tut-title').value = ""; });
+}
+
+// --- SETTINGS ---
+function fetchSettings() {
+    db.collection("admin").doc("payment").onSnapshot(d => {
+        if(d.exists) {
+            document.getElementById('set-bkash').value = d.data().bkash || "";
+            document.getElementById('set-nagad').value = d.data().nagad || "";
+            document.getElementById('set-rocket').value = d.data().rocket || "";
+        }
+    });
+    db.collection("settings").doc("general").onSnapshot(d => {
+        if(d.exists) {
+            const data = d.data();
+            document.getElementById('set-notice').value = data.notice || "";
+            document.getElementById('set-app-link').value = data.appLink || "";
+            document.getElementById('set-telegram').value = data.telegram || "";
+            document.getElementById('set-whatsapp').value = data.whatsapp || "";
+            document.getElementById('set-fb').value = data.facebook || "";
+            document.getElementById('set-insta').value = data.instagram || "";
+            document.getElementById('set-yt').value = data.youtube || "";
+        }
+    });
+}
+
+function savePayment() {
+    db.collection("admin").doc("payment").set({
+        bkash: document.getElementById('set-bkash').value,
+        nagad: document.getElementById('set-nagad').value,
+        rocket: document.getElementById('set-rocket').value
+    }, { merge: true }).then(() => Swal.fire('Payment Numbers Saved', '', 'success'));
+}
+
+function saveConfig() {
+    db.collection("settings").doc("general").set({
+        notice: document.getElementById('set-notice').value,
+        appLink: document.getElementById('set-app-link').value,
+        telegram: document.getElementById('set-telegram').value,
+        whatsapp: document.getElementById('set-whatsapp').value,
+        facebook: document.getElementById('set-fb').value,
+        instagram: document.getElementById('set-insta').value,
+        youtube: document.getElementById('set-yt').value
+    }, { merge: true }).then(() => Swal.fire('Config Saved', 'App Link & Socials updated', 'success'));
+}
+</script>
+</body>
+</html>
