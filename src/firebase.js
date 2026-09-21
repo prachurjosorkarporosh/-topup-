@@ -12,6 +12,13 @@ const app = firebase.app();
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+// Ensure auth session persistence is set to LOCAL so user & admin stay logged in permanently
+try {
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(e => {
+    console.warn("Auth persistence warning:", e.message);
+  });
+} catch(e) {}
+
 // Enable long-polling & robust network transport in iframe / restricted networks
 try {
   if (firebaseConfig.firestoreDatabaseId) {

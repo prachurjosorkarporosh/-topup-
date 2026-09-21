@@ -21,6 +21,81 @@ function checkAdminAccess(user) {
     return ADMIN_EMAILS.includes(email);
 }
 
+// Global Gallery Image File Uploader Helper
+async function handleFileUpload(inputElement, targetInputId, previewContainerId) {
+    const file = inputElement.files && inputElement.files[0];
+    if (!file) return;
+
+    // Check size limit (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        Swal.fire('File Too Large', 'Please select an image smaller than 5MB', 'warning');
+        inputElement.value = '';
+        return;
+    }
+
+    Swal.fire({
+        title: 'Uploading Image...',
+        text: 'Uploading image directly from your gallery',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const base64Data = e.target.result;
+        try {
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image: base64Data,
+                    filename: file.name
+                })
+            });
+            const data = await res.json();
+            if (data.success && data.url) {
+                // Populate input
+                const targetInput = document.getElementById(targetInputId);
+                if (targetInput) targetInput.value = data.url;
+
+                // Show preview
+                if (previewContainerId) {
+                    const previewBox = document.getElementById(previewContainerId);
+                    if (previewBox) {
+                        previewBox.classList.remove('hidden');
+                        const img = previewBox.querySelector('img');
+                        if (img) img.src = data.url;
+                    }
+                }
+
+                // If logo was uploaded, update logo preview
+                if (targetInputId === 'set-logo-url') {
+                    const logoPrev = document.getElementById('logo-preview-element');
+                    if (logoPrev) logoPrev.src = data.url;
+                }
+
+                Swal.fire({
+                    toast: true,
+                    icon: 'success',
+                    title: 'Image uploaded successfully!',
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            } else {
+                throw new Error(data.error || 'Upload failed');
+            }
+        } catch (err) {
+            console.error('Gallery image upload failed:', err);
+            Swal.fire('Upload Failed', err.message || 'Could not upload image from gallery', 'error');
+        }
+    };
+    reader.onerror = () => {
+        Swal.fire('Error', 'Could not read image file from device', 'error');
+    };
+    reader.readAsDataURL(file);
+}
+
 auth.onAuthStateChanged(user => {
     if(user) {
         const isEmailAdmin = checkAdminAccess(user);
@@ -41,28 +116,30 @@ auth.onAuthStateChanged(user => {
             return;
         }
 
-        // Otherwise check admins collection
+        // Otherwise check admins collection safely without trigger-happy signOut
         db.collection("admins").doc(user.uid).get().then(doc => {
             if(doc.exists) {
                 document.getElementById('login-sec').classList.add('hidden');
                 document.getElementById('admin-panel').classList.remove('hidden');
                 loadAllData();
             } else {
+                // Do NOT call auth.signOut() immediately. Show denied UI so user session is not destroyed
                 cleanupListeners();
-                auth.signOut().then(() => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Access Denied',
-                        text: 'This account (' + user.email + ') does not have admin permissions.'
-                    });
+                document.getElementById('login-sec').classList.remove('hidden');
+                document.getElementById('admin-panel').classList.add('hidden');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Access Denied',
+                    text: 'Account (' + user.email + ') does not have admin permissions. Please log in with an admin email.'
                 });
             }
         }).catch(err => {
             console.error('Admin check error:', err);
+            // On network hiccups or permission glitches, avoid kicking user out permanently
             cleanupListeners();
-            auth.signOut().then(() => {
-                Swal.fire('Error', 'Unauthorized admin account or permission issue', 'error');
-            });
+            document.getElementById('login-sec').classList.remove('hidden');
+            document.getElementById('admin-panel').classList.add('hidden');
+            Swal.fire('Connection Error', 'Could not verify admin status: ' + (err.message || 'Please retry'), 'warning');
         });
     } else {
         cleanupListeners();
@@ -282,21 +359,45 @@ function closeUserModal() {
     document.getElementById('user-modal').classList.add('hidden');
     currentViewUserId = null;
 }
-function updateUserBalance() {
-    const amount = parseInt(document.getElementById('balance-amount').value);
-    if(!amount || !currentViewUserId) return;
+function updateUserBalance(action) {
+    const rawVal = document.getElementById('balance-amount').value;
+    if (!rawVal || !currentViewUserId) {
+        return Swal.fire('Missing Amount', 'Please enter an amount', 'warning');
+    }
+
+    const num = Math.abs(parseFloat(rawVal));
+    if (isNaN(num) || num <= 0) {
+        return Swal.fire('Invalid Amount', 'Please enter a valid positive number', 'warning');
+    }
+
+    // Determine signed amount depending on action ('add' vs 'subtract')
+    // If action is passed as 'subtract', subtract amount. If 'add', add amount.
+    // If not passed, use the raw sign if user typed negative, otherwise default to add.
+    let delta = 0;
+    if (action === 'subtract') {
+        delta = -num;
+    } else if (action === 'add') {
+        delta = num;
+    } else {
+        delta = parseFloat(rawVal);
+    }
 
     const userRef = db.collection('users').doc(currentViewUserId);
     db.runTransaction(async (t) => {
         const doc = await t.get(userRef);
-        const currentBal = doc.exists ? (doc.data().balance || 0) : 0;
-        const newBal = currentBal + amount;
+        const currentBal = doc.exists ? (Number(doc.data().balance) || 0) : 0;
+        let newBal = currentBal + delta;
+        if (newBal < 0) newBal = 0; // Prevent negative user balance
         t.update(userRef, { balance: newBal });
-    }).then(() => {
-        Swal.fire({ toast: true, icon: 'success', title: 'Balance Updated', position: 'top', showConfirmButton: false, timer: 1500 });
+        return { currentBal, newBal };
+    }).then((res) => {
+        const titleMsg = delta < 0 ? `৳${Math.abs(delta)} Deducted Successfully` : `৳${delta} Added Successfully`;
+        Swal.fire({ toast: true, icon: 'success', title: titleMsg, position: 'top', showConfirmButton: false, timer: 1500 });
         document.getElementById('balance-amount').value = "";
-        const oldBal = parseInt(document.getElementById('modal-user-bal').innerText);
-        document.getElementById('modal-user-bal').innerText = oldBal + amount;
+        document.getElementById('modal-user-bal').innerText = res.newBal;
+        
+        // Also refresh users list so table reflects new balance
+        fetchUsers();
     }).catch(e => Swal.fire('Error', e.message, 'error'));
 }
 
@@ -329,10 +430,14 @@ function addGame() {
     const name = document.getElementById('new-game-name').value;
     const img = document.getElementById('new-game-img').value;
     const rules = document.getElementById('new-game-rules').value;
-    if(!name || !img) return Swal.fire('Missing Info', 'Game Name and Image URL are required', 'warning');
+    if(!name || !img) return Swal.fire('Missing Info', 'Game Name and Image are required', 'warning');
     db.collection("services").add({ name, image: img, rules: rules || "Enter Player ID" })
     .then(() => {
-        document.getElementById('new-game-name').value = ""; document.getElementById('new-game-img').value = ""; document.getElementById('new-game-rules').value = "";
+        document.getElementById('new-game-name').value = ""; 
+        document.getElementById('new-game-img').value = ""; 
+        document.getElementById('new-game-rules').value = "";
+        const prev = document.getElementById('game-img-preview');
+        if (prev) prev.classList.add('hidden');
         Swal.fire({toast: true, icon: 'success', title: 'Game Added', position: 'top-end', showConfirmButton: false, timer: 1500});
     });
 }
@@ -395,7 +500,17 @@ function fetchBanners() {
     });
     activeUnsubscribers.push(unsub);
 }
-function addBanner() { const url = document.getElementById('new-banner-url').value; if(url) db.collection("banners").add({ image: url }).then(() => document.getElementById('new-banner-url').value = ""); }
+function addBanner() { 
+    const url = document.getElementById('new-banner-url').value; 
+    if(url) {
+        db.collection("banners").add({ image: url }).then(() => {
+            document.getElementById('new-banner-url').value = "";
+            const prev = document.getElementById('banner-img-preview');
+            if (prev) prev.classList.add('hidden');
+            Swal.fire({toast: true, icon: 'success', title: 'Banner Added', position: 'top-end', showConfirmButton: false, timer: 1500});
+        });
+    }
+}
 
 // --- TUTORIALS ---
 function fetchTutorials() {
@@ -412,7 +527,16 @@ function fetchTutorials() {
 }
 function addTutorial() {
     const title = document.getElementById('tut-title').value; const thumb = document.getElementById('tut-thumb').value; const link = document.getElementById('tut-link').value;
-    if(title && link) db.collection("tutorials").add({ title, thumbnail: thumb || '', link }).then(()=>{ Swal.fire({toast:true, icon:'success', title:'Added'}); document.getElementById('tut-title').value = ""; });
+    if(title && link) {
+        db.collection("tutorials").add({ title, thumbnail: thumb || '', link }).then(()=>{ 
+            Swal.fire({toast:true, icon:'success', title:'Video Added'}); 
+            document.getElementById('tut-title').value = ""; 
+            document.getElementById('tut-thumb').value = ""; 
+            document.getElementById('tut-link').value = ""; 
+            const prev = document.getElementById('tut-thumb-preview');
+            if (prev) prev.classList.add('hidden');
+        });
+    }
 }
 
 // --- SETTINGS ---
@@ -431,6 +555,20 @@ function fetchSettings() {
     const unsub2 = db.collection("settings").doc("general").onSnapshot(d => {
         if(d.exists) {
             const data = d.data();
+            const siteNameEl = document.getElementById('set-site-name');
+            const logoUrlEl = document.getElementById('set-logo-url');
+            const logoPreviewEl = document.getElementById('logo-preview-element');
+
+            if (siteNameEl) siteNameEl.value = data.siteName || "Nenox Shop";
+            if (logoUrlEl) logoUrlEl.value = data.logoUrl || "/logo.png";
+            if (logoPreviewEl) logoPreviewEl.src = data.logoUrl || "/logo.png";
+
+            // Also synchronize admin panel top header branding
+            const adminLogo = document.getElementById('admin-header-logo-img');
+            if (adminLogo) adminLogo.src = data.logoUrl || "/logo.png";
+            const adminSiteName = document.getElementById('admin-header-site-name');
+            if (adminSiteName) adminSiteName.innerText = (data.siteName || "Control Center").toUpperCase();
+
             document.getElementById('set-notice').value = data.notice || "";
             document.getElementById('set-app-link').value = data.appLink || "";
             document.getElementById('set-telegram').value = data.telegram || "";
@@ -454,7 +592,12 @@ function savePayment() {
 }
 
 function saveConfig() {
+    const siteName = (document.getElementById('set-site-name') ? document.getElementById('set-site-name').value.trim() : '') || "Nenox Shop";
+    const logoUrl = (document.getElementById('set-logo-url') ? document.getElementById('set-logo-url').value.trim() : '') || "/logo.png";
+
     db.collection("settings").doc("general").set({
+        siteName: siteName,
+        logoUrl: logoUrl,
         notice: document.getElementById('set-notice').value,
         appLink: document.getElementById('set-app-link').value,
         telegram: document.getElementById('set-telegram').value,
@@ -462,5 +605,10 @@ function saveConfig() {
         facebook: document.getElementById('set-fb').value,
         instagram: document.getElementById('set-insta').value,
         youtube: document.getElementById('set-yt').value
-    }, { merge: true }).then(() => Swal.fire('Config Saved', 'App Link & Socials updated', 'success'));
+    }, { merge: true }).then(() => {
+        document.title = "Admin Panel - " + siteName;
+        Swal.fire('Config Saved', 'Site Name, Logo, Notice, App Link & Socials updated successfully!', 'success');
+    }).catch(err => {
+        Swal.fire('Error', 'Failed to save config: ' + err.message, 'error');
+    });
 }

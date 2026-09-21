@@ -43,11 +43,19 @@
 <!-- ADMIN PANEL -->
 <div id="admin-panel" class="hidden min-h-screen max-w-md mx-auto relative bg-slate-50 shadow-2xl overflow-hidden min-h-screen">
     <header class="bg-white px-5 py-4 flex justify-between items-center sticky top-0 z-30 shadow-sm">
-        <div>
-            <h1 class="font-bold text-lg text-gray-800">Admin<span class="text-pink-500">Panel</span></h1>
-            <p class="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Control Center</p>
+        <div class="flex items-center gap-2.5">
+            <img id="admin-header-logo-img" src="/logo.png" class="h-9 max-w-[90px] object-contain rounded" alt="Logo">
+            <div>
+                <h1 class="font-bold text-lg text-gray-800 leading-tight">Admin<span class="text-pink-500">Panel</span></h1>
+                <p id="admin-header-site-name" class="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Control Center</p>
+            </div>
         </div>
-        <button onclick="logout()" class="w-9 h-9 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"><i class="fas fa-power-off text-sm"></i></button>
+        <div class="flex items-center gap-2">
+            <a href="/" target="_blank" title="Go to User Website" class="px-3 py-1.5 rounded-full bg-pink-50 text-pink-600 font-bold text-xs flex items-center gap-1.5 hover:bg-pink-600 hover:text-white transition-all shadow-sm">
+                <i class="fas fa-external-link-alt text-xs"></i> <span>User Site</span>
+            </a>
+            <button onclick="logout()" title="Logout Admin" class="w-9 h-9 rounded-full bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"><i class="fas fa-power-off text-sm"></i></button>
+        </div>
     </header>
 
     <main class="p-4 space-y-4">
@@ -94,7 +102,23 @@
                     <h3 class="font-bold text-gray-800 mb-3"><i class="fas fa-gamepad text-pink-500 mr-2"></i>Create New Game</h3>
                     <div class="space-y-3">
                         <input type="text" id="new-game-name" placeholder="Game Name" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm">
-                        <input type="text" id="new-game-img" placeholder="Image URL" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm">
+                        
+                        <!-- Direct Gallery Upload for Game Image -->
+                        <div class="space-y-1.5">
+                            <label class="text-[11px] font-bold text-gray-600 block">Game Image (Gallery Upload or URL)</label>
+                            <div class="flex gap-2 items-center">
+                                <input type="file" id="game-file-input" accept="image/*" class="hidden" onchange="handleFileUpload(this, 'new-game-img', 'game-img-preview')">
+                                <button type="button" onclick="document.getElementById('game-file-input').click()" class="bg-pink-50 text-pink-600 border border-pink-200 px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-pink-100 transition whitespace-nowrap flex items-center gap-1.5">
+                                    <i class="fas fa-image"></i> Choose from Gallery
+                                </button>
+                                <input type="text" id="new-game-img" placeholder="Or paste image URL" class="flex-1 bg-gray-50 border border-gray-200 p-2.5 rounded-xl text-xs">
+                            </div>
+                            <div id="game-img-preview" class="hidden flex items-center gap-2 p-2 bg-pink-50 rounded-xl border border-pink-100">
+                                <img src="" class="w-10 h-10 object-cover rounded-lg border border-pink-200">
+                                <span class="text-xs text-pink-700 font-medium">Image ready!</span>
+                            </div>
+                        </div>
+
                         <input type="text" id="new-game-rules" placeholder="Rules (e.g. Only Player ID)" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm">
                         <button onclick="addGame()" class="w-full bg-gray-800 text-white py-3 rounded-xl font-bold text-sm hover:bg-black transition">Create Game</button>
                     </div>
@@ -125,9 +149,21 @@
         <div id="view-banners" class="hidden fade-in pb-24">
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-4">
                 <h3 class="font-bold text-gray-800 mb-3">Upload Banner</h3>
-                <div class="flex gap-2">
-                    <input type="text" id="new-banner-url" placeholder="Image URL" class="flex-1 bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm">
-                    <button onclick="addBanner()" class="bg-pink-500 text-white w-12 rounded-xl font-bold shadow-md"><i class="fas fa-plus"></i></button>
+                <div class="space-y-2">
+                    <div class="flex gap-2 items-center">
+                        <input type="file" id="banner-file-input" accept="image/*" class="hidden" onchange="handleFileUpload(this, 'new-banner-url', 'banner-img-preview')">
+                        <button type="button" onclick="document.getElementById('banner-file-input').click()" class="bg-pink-50 text-pink-600 border border-pink-200 px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-pink-100 transition whitespace-nowrap flex items-center gap-1.5">
+                            <i class="fas fa-images"></i> Gallery Upload
+                        </button>
+                        <input type="text" id="new-banner-url" placeholder="Or paste image URL" class="flex-1 bg-gray-50 border border-gray-200 p-2.5 rounded-xl text-xs">
+                        <button onclick="addBanner()" class="bg-pink-500 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-md whitespace-nowrap flex items-center gap-1">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                    </div>
+                    <div id="banner-img-preview" class="hidden flex items-center gap-2 p-2 bg-pink-50 rounded-xl border border-pink-100">
+                        <img src="" class="w-16 h-10 object-cover rounded-lg border border-pink-200">
+                        <span class="text-xs text-pink-700 font-medium">Banner ready to add!</span>
+                    </div>
                 </div>
             </div>
             <div id="banners-list" class="space-y-4"></div>
@@ -139,7 +175,23 @@
                 <h3 class="font-bold text-gray-800 mb-3">Add Video</h3>
                 <div class="space-y-3">
                     <input id="tut-title" type="text" placeholder="Title" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm">
-                    <input id="tut-thumb" type="text" placeholder="Thumbnail URL" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm">
+                    
+                    <!-- Direct Gallery Upload for Tutorial Thumbnail -->
+                    <div class="space-y-1.5">
+                        <label class="text-[11px] font-bold text-gray-600 block">Thumbnail (Gallery Upload or URL)</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="file" id="tut-file-input" accept="image/*" class="hidden" onchange="handleFileUpload(this, 'tut-thumb', 'tut-thumb-preview')">
+                            <button type="button" onclick="document.getElementById('tut-file-input').click()" class="bg-pink-50 text-pink-600 border border-pink-200 px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-pink-100 transition whitespace-nowrap flex items-center gap-1.5">
+                                <i class="fas fa-image"></i> Gallery
+                            </button>
+                            <input id="tut-thumb" type="text" placeholder="Or paste thumbnail URL" class="flex-1 bg-gray-50 border border-gray-200 p-2.5 rounded-xl text-xs">
+                        </div>
+                        <div id="tut-thumb-preview" class="hidden flex items-center gap-2 p-2 bg-pink-50 rounded-xl border border-pink-100">
+                            <img src="" class="w-12 h-8 object-cover rounded-lg border border-pink-200">
+                            <span class="text-xs text-pink-700 font-medium">Thumbnail ready!</span>
+                        </div>
+                    </div>
+
                     <input id="tut-link" type="text" placeholder="YouTube Link" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm">
                     <button onclick="addTutorial()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold text-sm">Post Video</button>
                 </div>
@@ -164,6 +216,29 @@
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                 <h3 class="font-bold text-gray-800 mb-4">App & Support Config</h3>
                 
+                <!-- Site Name & Logo Settings with Gallery Upload -->
+                <div class="space-y-3 mb-4 p-3 bg-pink-50/60 rounded-xl border border-pink-100">
+                    <h4 class="font-bold text-xs text-pink-700 uppercase">Site Name & Logo (সকল তথ্য লোগো অনুযায়ী)</h4>
+                    <div>
+                        <label class="text-xs font-bold text-gray-700 ml-1">Website Name</label>
+                        <input type="text" id="set-site-name" placeholder="e.g. Nenox Shop" class="w-full bg-white border border-gray-200 p-2.5 rounded-lg text-sm mt-1 font-medium">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-700 ml-1">Website Logo</label>
+                        <div class="flex gap-2 items-center mt-1">
+                            <input type="file" id="logo-file-input" accept="image/*" class="hidden" onchange="handleFileUpload(this, 'set-logo-url', 'logo-img-preview')">
+                            <button type="button" onclick="document.getElementById('logo-file-input').click()" class="bg-pink-600 text-white px-3 py-2 rounded-lg text-xs font-bold shadow hover:bg-pink-700 transition whitespace-nowrap flex items-center gap-1.5">
+                                <i class="fas fa-camera"></i> Upload Logo
+                            </button>
+                            <input type="text" id="set-logo-url" placeholder="Logo URL" class="flex-1 bg-white border border-gray-200 p-2 rounded-lg text-xs">
+                        </div>
+                        <div id="logo-img-preview" class="mt-2 flex items-center gap-2">
+                            <img id="logo-preview-element" src="/logo.png" class="h-10 max-w-[120px] object-contain bg-white p-1 rounded border">
+                            <span class="text-[11px] text-gray-500">Current website logo</span>
+                        </div>
+                    </div>
+                </div>
+
                 <label class="text-xs font-bold text-gray-500 ml-1">Notice Board</label>
                 <textarea id="set-notice" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm mb-3 h-20 resize-none" placeholder="Scrolling Notice"></textarea>
                 
@@ -217,12 +292,19 @@
             </div>
 
             <div class="bg-pink-50 p-4 rounded-xl border border-pink-100">
-                <label class="text-[10px] font-bold text-pink-800 uppercase mb-2 block">Add / Remove Balance</label>
-                <div class="flex gap-2">
-                    <input type="number" id="balance-amount" placeholder="Amount" class="w-full bg-white border border-pink-200 px-3 py-2 rounded-lg text-sm outline-none focus:border-pink-500">
-                    <button onclick="updateUserBalance()" class="bg-pink-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md whitespace-nowrap">ADD</button>
+                <label class="text-[11px] font-bold text-pink-900 uppercase mb-2 block">Manage User Balance</label>
+                <div class="mb-3">
+                    <input type="number" id="balance-amount" placeholder="Enter amount (e.g. 100)" class="w-full bg-white border border-pink-200 px-3 py-2.5 rounded-lg text-sm outline-none focus:border-pink-500 font-bold text-gray-800">
                 </div>
-                <p class="text-[10px] text-gray-500 mt-2">* Enter negative amount (e.g. -50) to remove money.</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="updateUserBalance('add')" class="bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-3 rounded-lg font-bold text-xs shadow-md flex items-center justify-center gap-1.5 transition">
+                        <i class="fas fa-plus-circle"></i> + Add Taka
+                    </button>
+                    <button onclick="updateUserBalance('subtract')" class="bg-rose-600 hover:bg-rose-700 text-white py-2.5 px-3 rounded-lg font-bold text-xs shadow-md flex items-center justify-center gap-1.5 transition">
+                        <i class="fas fa-minus-circle"></i> - Cut Taka
+                    </button>
+                </div>
+                <p class="text-[10px] text-gray-600 mt-2 text-center">Click <b>+ Add Taka</b> to increase or <b>- Cut Taka</b> to decrease balance.</p>
             </div>
         </div>
     </div>
