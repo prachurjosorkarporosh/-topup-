@@ -1,0 +1,6 @@
+{
+  "name": "Dream TopUp",
+  "description": "Game top-up and voucher purchasing platform with admin control center",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
