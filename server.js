@@ -9,10 +9,14 @@ const app = express();
 const PORT = 3000;
 const HOST = '0.0.0.0';
 
-// Route for admin page
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'admin.html'));
-});
+// Routes for individual pages
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
+app.get('/topup', (req, res) => res.sendFile(path.join(__dirname, 'topup.html')));
+app.get('/addmoney', (req, res) => res.sendFile(path.join(__dirname, 'addmoney.html')));
+app.get('/history', (req, res) => res.sendFile(path.join(__dirname, 'history.html')));
+app.get('/account', (req, res) => res.sendFile(path.join(__dirname, 'account.html')));
+app.get('/tutorial', (req, res) => res.sendFile(path.join(__dirname, 'tutorial.html')));
+app.get('/auth', (req, res) => res.sendFile(path.join(__dirname, 'auth.html')));
 
 // Serve static files from current directory
 app.use(express.static(__dirname));

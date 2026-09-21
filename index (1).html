@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dream TopUp</title>
+    <meta name="description" content="Game top-up and voucher purchasing platform with admin control center">
+    <meta property="og:title" content="Dream TopUp">
+    <meta property="og:description" content="Game top-up and voucher purchasing platform with admin control center">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Bree+Serif&family=Noto+Serif+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
@@ -11,10 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="/firebase-bundle.js"></script>
 
     <style>
         /* Global Font: Poppins for everywhere except Home */
@@ -180,7 +180,7 @@
 <div id="app-content" class="relative max-w-md mx-auto bg-slate-50 min-h-screen shadow-2xl">
     <header class="bg-white/90 backdrop-blur-md p-4 sticky top-0 z-40 flex justify-between items-center shadow-sm">
         <div class="flex items-center gap-2">
-            <img id="header-logo-img" src="https://placehold.co/150x50?text=Logo" class="h-16 object-contain">
+            <img id="header-logo-img" src="/logo.png" alt="Logo" class="h-12 max-h-14 object-contain cursor-pointer" onclick="showSec('home')">
         </div>
         <div id="header-balance-container" class="hidden bg-sky-500 px-4 py-2 rounded-full text-sm font-bold text-white border border-sky-600 shadow-md">
             <i class="fas fa-wallet mr-1"></i> ৳ <span id="header-balance">0</span>
@@ -351,7 +351,7 @@
             
             <div class="mt-8 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <div class="text-center mb-5">
-                    <img id="about-logo-img" src="https://placehold.co/150x50?text=Logo" class="h-10 mx-auto object-contain mb-2">
+                    <img id="about-logo-img" src="/logo.png" class="h-10 mx-auto object-contain mb-2">
                     <h2 id="about-site-name" class="text-lg font-bold text-gray-800 lang-auto">Nenox Shop</h2>
                     <p class="text-sm text-gray-500 mt-1">Free Fire Diamond TopUp<br>Largest TopUp Site In Bangladesh</p>
                 </div>
@@ -862,21 +862,10 @@
 
 <script>
     // --- 1. FIREBASE CONFIGURATION ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyCurGpgWy4EOwHyXr8kdVC91Qr4gGxJBis",
-      authDomain: "death-zone-tournament.firebaseapp.com",
-      databaseURL: "https://death-zone-tournament-default-rtdb.firebaseio.com",
-      projectId: "death-zone-tournament",
-      storageBucket: "death-zone-tournament.firebasestorage.app",
-      messagingSenderId: "616704594989",
-      appId: "1:616704594989:web:6b01c5819145a79c1894a4",
-      measurementId: "G-Y14YTNDZYT"
-    };
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const auth = firebase.auth();
-    // ✅ Realtime Database instance
-    const rtdb = firebase.database();
+    const firebaseConfig = window.firebaseConfig;
+    const db = window.db;
+    const auth = window.auth;
+    const rtdb = window.rtdb;
 
     let currentUser = null;
     let userBalance = 0;
@@ -921,7 +910,7 @@
         db.collection("settings").doc("general").onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
-                const logoUrl = data.logoUrl || "https://placehold.co/150x50?text=No+Logo";
+                const logoUrl = data.logoUrl || "/logo.png";
                 const siteName = data.siteName || "Nenox Shop";
                 
                 isAutoPayEnabled = data.autoPayEnabled === true;

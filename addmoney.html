@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Add Money - Deposit - Nenox Shop</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/firebase-bundle.js"></script>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="select-none bg-slate-50">
+<div id="app-content" class="relative max-w-md mx-auto bg-slate-50 min-h-screen shadow-2xl">
+    <header class="bg-white/90 backdrop-blur-md p-4 sticky top-0 z-40 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-3">
+            <a href="/" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-gray-200 transition"><i class="fas fa-arrow-left text-sm"></i></a>
+            <a href="/" class="flex items-center gap-2">
+                <img id="header-logo-img" src="/logo.png" alt="Logo" class="h-10 max-h-12 object-contain cursor-pointer">
+            </a>
+            <span class="font-bold text-gray-800 text-base">Add Money</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/addmoney.html" id="header-balance-container" class="hidden bg-sky-500 px-3 py-1.5 rounded-full text-xs font-bold text-white border border-sky-600 shadow-md flex items-center">
+                <i class="fas fa-wallet mr-1"></i> ৳ <span id="header-balance">0</span>
+            </a>
+            <div id="header-login-container">
+                <a href="/auth.html" class="bg-sky-600 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md hover:bg-sky-700 transition flex items-center">
+                    <i class="fas fa-sign-in-alt mr-1"></i> Login
+                </a>
+            </div>
+        </div>
+    </header>
+<main class="p-3 relative pb-20">
+        <section id="addmoney-sec" class="animate-fade-in pb-20 bg-[#f8fafc] min-h-screen">
+            
+            <div id="am-step-1" class="step-transition">
+                <div class="bg-white p-6 shadow-sm border-b border-gray-100 mb-6">
+                    <h2 class="font-bold text-lg text-gray-800 uppercase tracking-wide">Add Money</h2>
+                </div>
+
+                <div class="px-4">
+                    <div class="bg-white rounded-lg p-8 shadow-sm border border-gray-200 mb-6 text-center">
+                        <label class="block text-gray-500 text-sm font-bold mb-4 uppercase tracking-wider">
+                            Enter Amount to Deposit
+                        </label>
+                        
+                        <div class="relative mb-6 max-w-[200px] mx-auto">
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-2xl font-bold text-gray-400">৳</span>
+                            <input type="number" id="new-amount-input" value="100" 
+                                   class="w-full border-b-2 border-gray-300 py-2 pl-8 pr-2 text-center text-3xl font-bold text-gray-800 focus:outline-none focus:border-red-500 transition-colors bg-transparent" 
+                                   placeholder="100">
+                        </div>
+
+                        <button onclick="goToMethodStep()" 
+                                class="w-full bg-sky-600 text-white font-bold py-3.5 rounded shadow-lg hover:bg-sky-700 active:scale-95 transition-all text-sm uppercase tracking-wide">
+                            PROCEED TO PAYMENT
+                        </button>
+                    </div>
+
+                    <div class="mt-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fab fa-youtube text-red-600"></i>
+                            <h3 class="font-bold text-gray-700 text-sm">Tutorial: How to Add Money</h3>
+                        </div>
+                        <div class="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 p-1">
+                            <div class="relative w-full aspect-video">
+                                <iframe id="new-tutorial-video" 
+                                        class="w-full h-full rounded"
+                                        src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
+                                        title="How to Add Money"
+                                        frameborder="0" 
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="am-step-2" class="hidden step-transition h-screen flex flex-col bg-[#f0f4f7]">
+                <div class="bg-white p-3 flex items-center justify-between shadow-sm sticky top-0 z-10">
+                    <button onclick="backToAmountStep()" class="text-gray-500 w-8 h-8 flex items-center justify-center">
+                         <i class="fas fa-arrow-left text-lg"></i>
+                    </button>
+                    <div class="text-right">
+                        <img src="" id="step2-logo" class="h-8 object-contain inline-block">
+                    </div>
+                    <button onclick="showSec('home')" class="text-gray-400">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="flex-1 flex flex-col justify-center items-center px-6">
+                    <div class="bg-white rounded-full w-32 h-32 flex items-center justify-center shadow-sm border border-gray-100 mb-6 p-4">
+                        <img src="" id="step2-center-logo" class="w-full object-contain">
+                    </div>
+                    
+                    <h2 class="text-gray-600 font-medium mb-8 text-lg">Auto Pay</h2>
+
+                    <div class="w-full bg-[#003399] text-white py-2.5 text-center text-sm font-bold rounded-t-lg mb-0 shadow-md">
+                        মোবাইল ব্যাংকিং
+                    </div>
+                    
+                    <div class="w-full grid grid-cols-2 gap-4 bg-white p-4 rounded-b-lg shadow-sm border border-gray-200 border-t-0">
+                        <button onclick="goToPaymentPage('bKash', 'theme-bkash', 'https://i.ibb.co.com/9kCCTNsx/1656227518bkash-logo-png.png')" 
+                                class="bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center hover:border-pink-500 hover:shadow-md transition h-16">
+                            <img src="https://i.ibb.co.com/9kCCTNsx/1656227518bkash-logo-png.png" class="h-8 object-contain">
+                        </button>
+                        
+                        <button onclick="goToPaymentPage('Nagad', 'theme-nagad', 'https://i.ibb.co.com/VcqJTvpn/Nagad-Logo-horizontally-og.png')" 
+                                class="bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center hover:border-orange-500 hover:shadow-md transition h-16">
+                            <img src="https://i.ibb.co.com/VcqJTvpn/Nagad-Logo-horizontally-og.png" class="h-6 object-contain">
+                        </button>
+
+                        <button onclick="goToPaymentPage('Rocket', 'theme-rocket', 'https://i.ibb.co.com/wFZkNM48/rocket-color-logo-mobile-banking-icon-free-png.png')" 
+                                class="bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-center hover:border-purple-500 hover:shadow-md transition h-16">
+                            <img src="https://i.ibb.co.com/wFZkNM48/rocket-color-logo-mobile-banking-icon-free-png.png" class="h-6 object-contain">
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="am-step-3" class="hidden step-transition min-h-screen bg-[#f0f4f7] relative pb-24">
+                
+                <div class="bg-white p-3 shadow-sm flex justify-between items-center sticky top-0 z-20">
+                    <button onclick="backToMethodStep()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <span class="bg-gray-100 px-2 py-0.5 rounded text-xs font-bold text-gray-500">English <i class="fas fa-caret-down ml-1"></i></span>
+                        <button onclick="showSec('home')" class="text-gray-400 text-lg"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+
+                <div class="text-center py-6">
+                    <img id="pay-method-logo" src="" class="h-12 mx-auto object-contain drop-shadow-sm">
+                </div>
+
+                <div class="px-4">
+                    <div class="bg-white rounded-xl p-4 flex items-center gap-4 mb-4 shadow-sm">
+                        <div class="w-12 h-12 rounded-full border border-gray-100 p-1">
+                            <img id="pay-site-logo-small" src="" class="w-full h-full rounded-full object-cover">
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-800 font-bold">Auto Pay</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-4 mb-4 shadow-sm flex items-center gap-2">
+                        <span class="text-lg font-bold text-gray-700">৳</span>
+                        <span id="pay-amount-display" class="text-xl font-bold text-gray-800">100</span>
+                    </div>
+
+                    <div id="payment-theme-card" class="rounded-xl shadow-lg overflow-hidden text-white mb-6 relative transition-colors duration-300">
+                        
+                        <div class="p-5 text-center">
+                            <h3 class="font-bold text-lg mb-4 drop-shadow-md">ট্রানজেকশন আইডি দিন</h3>
+                            <input type="text" id="pay-trx-input" 
+                                   class="w-full bg-white text-gray-800 text-center py-3 rounded text-sm font-bold shadow-inner focus:outline-none placeholder-gray-400" 
+                                   placeholder="ট্রানজেকশন আইডি দিন">
+                        </div>
+
+                        <div class="bg-black/10 p-5 text-sm space-y-4 backdrop-blur-sm border-t border-white/20">
+                            
+                            <div class="flex gap-2">
+                                <span class="mt-1">•</span>
+                                <p>*247# ডায়াল করে আপনার <span class="method-name font-bold">bKash</span> মোবাইল মেনুতে যান অথবা <span class="method-name font-bold">bKash</span> অ্যাপে যান।</p>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <span class="mt-1">•</span>
+                                <p>"Send Money" -এ ক্লিক করুন।</p>
+                            </div>
+
+                            <div class="flex flex-col gap-1 pl-3">
+                                <p>• প্রাপক নম্বর হিসেবে এই নম্বরটি লিখুন:</p>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span id="pay-admin-number" class="text-2xl font-bold text-yellow-300 tracking-wider">Loading...</span>
+                                    <button onclick="copyPayNumber()" class="bg-black/30 hover:bg-black/50 text-white px-2 py-1 rounded text-[10px] font-bold transition flex items-center gap-1 border border-white/30">
+                                        <i class="far fa-copy"></i> COPY
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <span class="mt-1">•</span>
+                                <p>টাকার পরিমাণ: <span id="pay-amount-text" class="font-bold text-yellow-300">100</span></p>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <span class="mt-1">•</span>
+                                <p>নিশ্চিত করতে এখন আপনার <span class="method-name font-bold">bKash</span> মোবাইল মেনু পিন লিখুন।</p>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <span class="mt-1">•</span>
+                                <p>সবকিছু ঠিক থাকলে, আপনি <span class="method-name font-bold">bKash</span> থেকে একটি নিশ্চিতকরণ বার্তা পাবেন।</p>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <span class="mt-1">•</span>
+                                <p class="font-bold text-yellow-200">এখন উপরের বক্সে আপনার Transaction ID দিন এবং নিচের VERIFY বাটনে ক্লিক করুন।</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 max-w-md mx-auto z-50 rounded-t-xl">
+                    <button onclick="handleNewVerify()" 
+                            class="w-full bg-[#b71c1c] text-white font-bold py-3 rounded shadow-lg hover:bg-red-800 transition active:scale-95 text-lg tracking-wider">
+                        VERIFY
+                    </button>
+                </div>
+            </div>
+        </section>
+</main>
+
+
+    <div id="fab-container" class="fixed bottom-20 right-4 z-50">
+        <div class="flex items-center gap-2">
+            <div id="fab-help-text" class="bg-red-500 text-white text-xs font-semibold px-2 py-1.5 rounded-lg shadow-md transition-opacity duration-300">
+                সাহায্য লাগবে ?
+            </div>
+            <div class="relative flex flex-col items-center">
+                <div id="fab-options" class="absolute bottom-14 space-y-1.5 transition-all duration-300 ease-out transform translate-y-4 opacity-0 pointer-events-none">
+                    <a id="link-whatsapp" href="#" target="_blank" class="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-lg hover:bg-gray-100 no-underline">
+                        <i class="fab fa-whatsapp text-xl text-[#25D366]"></i>
+                    </a>
+                    <a id="link-telegram" href="#" target="_blank" class="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-lg hover:bg-gray-100 no-underline">
+                        <i class="fab fa-telegram-plane text-xl text-[#0088cc]"></i>
+                    </a>
+                </div>
+                <button id="fab-toggler" onclick="toggleFabMenu()" class="relative w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white text-xl shadow-xl transition-all duration-300 ease-in-out hover:bg-red-600 focus:outline-none">
+                    <i id="fab-icon-open" class="fas fa-phone-alt transition-all duration-300 transform"></i>
+                    <i id="fab-icon-close" class="fas fa-times absolute transition-all duration-300 transform scale-0 opacity-0 -rotate-180"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="fixed bottom-0 w-full bg-white/95 backdrop-blur-sm border-t border-gray-100/50 py-3 px-6 shadow-[0_-5px_20px_rgba(0,0,0,0.03)] z-40 max-w-md mx-auto left-0 right-0 rounded-t-[20px]">
+        <div class="flex justify-between items-center">
+            <a href="/" class="nav-item flex flex-col items-center gap-1.5 text-gray-700 transition-all duration-300 hover:text-sky-500  group" id="nav-home">
+                <img src="https://img.icons8.com/?size=100&id=OXVih02dFZ53&format=png&color=000000" class="w-6 h-6 group-hover:scale-110 transition-transform duration-300" alt="Home">
+                <span class="text-[10px] font-semibold tracking-wide">Home</span>
+            </a>
+            <a href="/tutorial.html" class="nav-item flex flex-col items-center gap-1.5 text-gray-700 transition-all duration-300 hover:text-sky-500  group" id="nav-tutorial">
+                <img src="https://img.icons8.com/?size=100&id=15979&format=png&color=000000" class="w-6 h-6 group-hover:scale-110 transition-transform duration-300" alt="Tutorial">
+                <span class="text-[10px] font-semibold tracking-wide">Tutorial</span>
+            </a>
+            <a href="/addmoney.html" class="nav-item flex flex-col items-center gap-1.5 text-gray-700 transition-all duration-300 hover:text-sky-500 active-tab group" id="nav-addmoney">
+                <img src="https://img.icons8.com/?size=100&id=95782&format=png&color=000000" class="w-6 h-6 group-hover:scale-110 transition-transform duration-300" alt="Add Money">
+                <span class="text-[10px] font-semibold tracking-wide">Add Money</span>
+            </a>
+            <a href="/history.html" class="nav-item flex flex-col items-center gap-1.5 text-gray-700 transition-all duration-300 hover:text-sky-500  group" id="nav-history">
+                <img src="https://img.icons8.com/?size=100&id=41117&format=png&color=000000" class="w-6 h-6 group-hover:scale-110 transition-transform duration-300" alt="History">
+                <span class="text-[10px] font-semibold tracking-wide">History</span>
+            </a>
+            <a href="/account.html" class="nav-item flex flex-col items-center gap-1.5 text-gray-700 transition-all duration-300 hover:text-sky-500  group" id="nav-account">
+                <img src="https://img.icons8.com/?size=100&id=7820&format=png&color=000000" class="w-6 h-6 group-hover:scale-110 transition-transform duration-300" alt="Account">
+                <span class="text-[10px] font-semibold tracking-wide">Account</span>
+            </a>
+        </div>
+    </nav>
+</div>
+<script src="/js/app.js"></script>
+</body>
+</html>

@@ -6,10 +6,15 @@
   "type": "module",
   "scripts": {
     "dev": "node server.js",
-    "build": "echo 'Build complete'",
+    "build": "esbuild src/firebase.js --bundle --minify --outfile=firebase-bundle.js --format=iife",
+    "lint": "node --check server.js && node --check js/app.js && node --check js/admin.js",
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "firebase": "^12.19.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

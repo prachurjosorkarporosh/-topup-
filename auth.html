@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Login & Register - Nenox Shop</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/firebase-bundle.js"></script>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="select-none bg-slate-50">
+<div id="app-content" class="relative max-w-md mx-auto bg-slate-50 min-h-screen shadow-2xl">
+    <header class="bg-white/90 backdrop-blur-md p-4 sticky top-0 z-40 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-3">
+            <a href="/" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-gray-200 transition"><i class="fas fa-arrow-left text-sm"></i></a>
+            <a href="/" class="flex items-center gap-2">
+                <img id="header-logo-img" src="/logo.png" alt="Logo" class="h-10 max-h-12 object-contain cursor-pointer">
+            </a>
+            <span class="font-bold text-gray-800 text-base">Login / Register</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/addmoney.html" id="header-balance-container" class="hidden bg-sky-500 px-3 py-1.5 rounded-full text-xs font-bold text-white border border-sky-600 shadow-md flex items-center">
+                <i class="fas fa-wallet mr-1"></i> ৳ <span id="header-balance">0</span>
+            </a>
+            <div id="header-login-container">
+                <a href="/auth.html" class="bg-sky-600 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md hover:bg-sky-700 transition flex items-center">
+                    <i class="fas fa-sign-in-alt mr-1"></i> Login
+                </a>
+            </div>
+        </div>
+    </header>
+<main class="p-3 relative pb-20">
+        <section id="auth-sec" class="animate-fade-in">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden relative p-6">
+                
+                <button onclick="showSec('home')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition z-10">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+
+                <div id="login-view">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Login</h2>
+
+                    <button onclick="handleGoogleLogin()" class="w-full bg-white border border-gray-300 text-gray-700 font-semibold py-2.5 rounded-lg shadow-sm hover:bg-gray-50 transition flex items-center justify-center gap-3 mb-6">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+                        Login with Google
+                    </button>
+
+                    <div class="relative flex py-2 items-center mb-6">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink-0 mx-4 text-gray-400 text-xs font-medium">Or sign in with credentials</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+                        <input type="email" id="login-email" placeholder="Email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors">
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                        <input type="password" id="login-pass" placeholder="Password" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-colors">
+                    </div>
+
+                    <button onclick="handleLogin()" class="w-full bg-sky-600 text-white font-bold py-3 rounded-lg shadow-lg hover:bg-sky-700 transition duration-300">
+                        Login
+                    </button>
+
+                    <div class="mt-6 text-center text-sm text-gray-600">
+                        New user to mangotopup.com? <button onclick="toggleAuth('register')" class="text-sky-600 font-bold hover:underline">Register Now</button>
+                    </div>
+                </div>
+
+                <div id="register-view" class="hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Register</h2>
+
+                    <button onclick="handleGoogleLogin()" class="w-full bg-white border border-gray-300 text-gray-700 font-semibold py-2.5 rounded-lg shadow-sm hover:bg-gray-50 transition flex items-center justify-center gap-3 mb-6">
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+                        Sign up with Google
+                    </button>
+
+                    <div class="relative flex py-2 items-center mb-6">
+                        <div class="flex-grow border-t border-gray-200"></div>
+                        <span class="flex-shrink-0 mx-4 text-gray-400 text-xs font-medium">Or sign up with credentials</span>
+                        <div class="flex-grow border-t border-gray-200"></div>
+                    </div>
+
+                    <div class="space-y-4 mb-6">
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-1">Name</label>
+                            <input type="text" id="reg-name" placeholder="Name" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-1">Phone</label>
+                            <input type="number" id="reg-phone" placeholder="Phone" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-1">Email</label>
+                            <input type="email" id="reg-email" placeholder="Email" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-1">Password</label>
+                            <input type="password" id="reg-pass" placeholder="Password" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                        </div>
+                    </div>
+
+                    <button onclick="handleRegister()" class="w-full bg-sky-600 text-white font-bold py-3 rounded-lg shadow-lg hover:bg-sky-700 transition duration-300">
+                        Register
+                    </button>
+
+                    <div class="mt-6 text-center text-sm text-gray-600">
+                        Already member? <button onclick="toggleAuth('login')" class="text-sky-600 font-bold hover:underline">Login Now</button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+</main>
+
+
+    <div id="fab-container" class="fixed bottom-20 right-4 z-50">
+        <div class="flex items-center gap-2">
+            <div id="fab-help-text" class="bg-red-500 text-white text-xs font-semibold px-2 py-1.5 rounded-lg shadow-md transition-opacity duration-300">
+                সাহায্য লাগবে ?
+            </div>
+            <div class="relative flex flex-col items-center">
+                <div id="fab-options" class="absolute bottom-14 space-y-1.5 transition-all duration-300 ease-out transform translate-y-4 opacity-0 pointer-events-none">
+                    <a id="link-whatsapp" href="#" target="_blank" class="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-lg hover:bg-gray-100 no-underline">
+                        <i class="fab fa-whatsapp text-xl text-[#25D366]"></i>
+                    </a>
+                    <a id="link-telegram" href="#" target="_blank" class="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-lg hover:bg-gray-100 no-underline">
+                        <i class="fab fa-telegram-plane text-xl text-[#0088cc]"></i>
+                    </a>
+                </div>
+                <button id="fab-toggler" onclick="toggleFabMenu()" class="relative w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white text-xl shadow-xl transition-all duration-300 ease-in-out hover:bg-red-600 focus:outline-none">
+                    <i id="fab-icon-open" class="fas fa-phone-alt transition-all duration-300 transform"></i>
+                    <i id="fab-icon-close" class="fas fa-times absolute transition-all duration-300 transform scale-0 opacity-0 -rotate-180"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="fixed bottom-0 w-full bg-white/95 backdrop-blur-sm border-t border-gray-100/50 py-3 px-6 shadow-[0_-5px_20px_rgba(0,0,0,0.03)] z-40 max-w-md mx-auto left-0 right-0 rounded-t-[20px]">
+        <div class="flex justify-between items-center">
+            <a href="/" class="nav-item flex flex-col items-center gap-1.5 text-gray-700 transition-all duration-300 hover:text-sky-500  group" id="nav-home">
+                <img src="https://img.icons8.com/?size=100&id=OXVih02dFZ53&format=png&color=000000" class="w-6 h-6 group-hover:scale-110 transition-transform duration-300" alt="Home">
+                <span class="text-[10px] font-semibold tracking-wide">Home</span>
+            </a>
+            <a href="/tutorial.html" class="nav-item flex flex-col items-center gap-1.5 text-gray-700 transition-all duration-300 hover:text-sky-500  group" id="nav-tutorial">
+                <img src="https://img.icons8.com/?size=100&id=15979&format=png&color=000000" class="w-6 h-6 group-hover:scale-110 transition-transform duration-300" alt="Tutorial">
+                <span class="text-[10px] font-semibold tracking-wide">Tutorial</span>
+            </a>
+            <a href="/addmoney.html" class="nav-item flex flex-col items-center gap-1.5 text-gray-700 transition-all duration-300 hover:text-sky-500  group" id="nav-addmoney">
+                <img src="https://img.icons8.com/?size=100&id=95782&format=png&color=000000" class="w-6 h-6 group-hover:scale-110 transition-transform duration-300" alt="Add Money">
+                <span class="text-[10px] font-semibold tracking-wide">Add Money</span>
+            </a>
+            <a href="/history.html" class="nav-item flex flex-col items-center gap-1.5 text-gray-700 transition-all duration-300 hover:text-sky-500  group" id="nav-history">
+                <img src="https://img.icons8.com/?size=100&id=41117&format=png&color=000000" class="w-6 h-6 group-hover:scale-110 transition-transform duration-300" alt="History">
+                <span class="text-[10px] font-semibold tracking-wide">History</span>
+            </a>
+            <a href="/account.html" class="nav-item flex flex-col items-center gap-1.5 text-gray-700 transition-all duration-300 hover:text-sky-500  group" id="nav-account">
+                <img src="https://img.icons8.com/?size=100&id=7820&format=png&color=000000" class="w-6 h-6 group-hover:scale-110 transition-transform duration-300" alt="Account">
+                <span class="text-[10px] font-semibold tracking-wide">Account</span>
+            </a>
+        </div>
+    </nav>
+</div>
+<script src="/js/app.js"></script>
+</body>
+</html>

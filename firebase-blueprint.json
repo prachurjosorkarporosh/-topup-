@@ -1,0 +1,218 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with balance and credentials",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "format": "email", "maxLength": 120 },
+        "balance": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "role": { "type": "string", "enum": ["user", "admin"] }
+      },
+      "required": ["email", "balance"]
+    },
+    "GeneralSettings": {
+      "title": "General Settings",
+      "description": "Global storefront configurations",
+      "type": "object",
+      "properties": {
+        "siteName": { "type": "string", "maxLength": 100 },
+        "logo": { "type": "string", "maxLength": 500 },
+        "notice": { "type": "string", "maxLength": 1000 },
+        "whatsapp": { "type": "string", "maxLength": 50 },
+        "appLink": { "type": "string", "maxLength": 500 },
+        "rules": { "type": "string", "maxLength": 2000 },
+        "contactNumber": { "type": "string", "maxLength": 50 },
+        "maintenance": { "type": "boolean" }
+      }
+    },
+    "VideoSettings": {
+      "title": "Video Settings",
+      "description": "Tutorial and add money videos",
+      "type": "object",
+      "properties": {
+        "addMoneyVideo": { "type": "string", "maxLength": 500 },
+        "tutorialVideo": { "type": "string", "maxLength": 500 }
+      }
+    },
+    "PaymentSettings": {
+      "title": "Payment Settings",
+      "description": "Admin wallet and banking numbers for manual deposits",
+      "type": "object",
+      "properties": {
+        "bkash": { "type": "string", "maxLength": 30 },
+        "nagad": { "type": "string", "maxLength": 30 },
+        "rocket": { "type": "string", "maxLength": 30 },
+        "instruction": { "type": "string", "maxLength": 1000 }
+      }
+    },
+    "Service": {
+      "title": "Service",
+      "description": "Games and voucher service catalog item",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "image": { "type": "string", "maxLength": 500 },
+        "rules": { "type": "string", "maxLength": 2000 },
+        "type": { "type": "string", "maxLength": 50 },
+        "slot": { "type": "number" }
+      },
+      "required": ["name", "image"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Top-up package or voucher item under a service",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "price": { "type": "number" },
+        "stockCount": { "type": "number" }
+      },
+      "required": ["name", "price"]
+    },
+    "Stock": {
+      "title": "Stock Item",
+      "description": "Voucher or redemption code item in product stock",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string", "maxLength": 200 },
+        "status": { "type": "string", "enum": ["available", "used"] }
+      },
+      "required": ["code", "status"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer purchase order for game topup or voucher",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "userEmail": { "type": "string", "maxLength": 120 },
+        "gameId": { "type": "string", "maxLength": 128 },
+        "gameName": { "type": "string", "maxLength": 100 },
+        "productId": { "type": "string", "maxLength": 128 },
+        "productName": { "type": "string", "maxLength": 100 },
+        "price": { "type": "number" },
+        "playerId": { "type": "string", "maxLength": 100 },
+        "status": { "type": "string", "enum": ["pending", "success", "refunded", "cancelled"] },
+        "code": { "type": "string", "maxLength": 200 },
+        "date": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "price", "status"]
+    },
+    "Deposit": {
+      "title": "Deposit",
+      "description": "Customer balance top-up request",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "userEmail": { "type": "string", "maxLength": 120 },
+        "method": { "type": "string", "enum": ["bkash", "nagad", "rocket"] },
+        "amount": { "type": "number" },
+        "number": { "type": "string", "maxLength": 30 },
+        "trxId": { "type": "string", "maxLength": 100 },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "date": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "method", "amount", "trxId", "status"]
+    },
+    "Banner": {
+      "title": "Banner",
+      "description": "Home carousel promotional banner",
+      "type": "object",
+      "properties": {
+        "image": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["image"]
+    },
+    "Tutorial": {
+      "title": "Tutorial",
+      "description": "Video tutorial item",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 200 },
+        "thumbnail": { "type": "string", "maxLength": 500 },
+        "link": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["title", "link"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Game/service display category",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "slot": { "type": "number" }
+      },
+      "required": ["name"]
+    },
+    "Admin": {
+      "title": "Admin Role",
+      "description": "Admin privilege record",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 120 },
+        "role": { "type": "string", "enum": ["admin"] }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "User" },
+      "description": "User accounts and balances"
+    },
+    "/settings/general": {
+      "schema": { "$ref": "GeneralSettings" },
+      "description": "General application settings"
+    },
+    "/settings/videos": {
+      "schema": { "$ref": "VideoSettings" },
+      "description": "Video settings"
+    },
+    "/admin/payment": {
+      "schema": { "$ref": "PaymentSettings" },
+      "description": "Payment numbers and instructions"
+    },
+    "/services/{serviceId}": {
+      "schema": { "$ref": "Service" },
+      "description": "Service/game catalog items"
+    },
+    "/services/{serviceId}/products/{productId}": {
+      "schema": { "$ref": "Product" },
+      "description": "Products under a game/service"
+    },
+    "/services/{serviceId}/products/{productId}/stock/{stockId}": {
+      "schema": { "$ref": "Stock" },
+      "description": "Stock codes for auto delivery"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "Order" },
+      "description": "Orders placed by customers"
+    },
+    "/deposits/{depositId}": {
+      "schema": { "$ref": "Deposit" },
+      "description": "Balance topup requests"
+    },
+    "/banners/{bannerId}": {
+      "schema": { "$ref": "Banner" },
+      "description": "Store banners"
+    },
+    "/tutorials/{tutorialId}": {
+      "schema": { "$ref": "Tutorial" },
+      "description": "Video tutorial links"
+    },
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "Category" },
+      "description": "Service categories"
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "Admin" },
+      "description": "Authorized administrators"
+    }
+  }
+}

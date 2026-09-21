@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My Account - Nenox Shop</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/firebase-bundle.js"></script>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="select-none bg-slate-50">
+<div id="app-content" class="relative max-w-md mx-auto bg-slate-50 min-h-screen shadow-2xl">
+    <header class="bg-white/90 backdrop-blur-md p-4 sticky top-0 z-40 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-3">
+            <a href="/" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-gray-200 transition"><i class="fas fa-arrow-left text-sm"></i></a>
+            <a href="/" class="flex items-center gap-2">
+                <img id="header-logo-img" src="/logo.png" alt="Logo" class="h-10 max-h-12 object-contain cursor-pointer">
+            </a>
+            <span class="font-bold text-gray-800 text-base">My Account</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/addmoney.html" id="header-balance-container" class="hidden bg-sky-500 px-3 py-1.5 rounded-full text-xs font-bold text-white border border-sky-600 shadow-md flex items-center">
+                <i class="fas fa-wallet mr-1"></i> ৳ <span id="header-balance">0</span>
+            </a>
+            <div id="header-login-container">
+                <a href="/auth.html" class="bg-sky-600 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-md hover:bg-sky-700 transition flex items-center">
+                    <i class="fas fa-sign-in-alt mr-1"></i> Login
+                </a>
+            </div>
+        </div>
+    </header>
+<main class="p-3 relative pb-20">
+        <section id="account-sec" class="animate-fade-in pb-24 bg-[#f6f8fa] min-h-screen">
+            <div class="flex flex-col items-center pt-8 pb-4">
+                <div class="relative mb-2">
+                    <div class="w-24 h-24 rounded-full bg-gradient-to-b from-[#4DD0E1] to-[#0288D1] p-1 shadow-md">
+                        <div class="w-full h-full rounded-full bg-white p-[2px]">
+                            <div id="profile-img-container" class="w-full h-full rounded-full bg-[#00e676] overflow-hidden flex items-center justify-center">
+                                <span id="profile-initial" class="text-4xl font-normal text-black hidden"></span>
+                                <img id="acc-profile-img" src="" class="w-full h-full object-cover hidden">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h2 class="text-sm font-bold text-[#1976d2] mb-1">Hi, <span id="acc-profile-name">User</span></h2>
+                
+                <div class="flex items-center gap-1 text-black font-bold text-[11px]">
+                    <span>Available Balance : <span id="acc-profile-balance">0</span> Tk</span>
+                    <i class="fas fa-redo-alt text-[10px] cursor-pointer text-gray-800 hover:rotate-180 transition-transform"></i>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 px-4 mb-6">
+                <div class="bg-white py-3 px-2 rounded-lg border border-[#2196F3] text-center shadow-sm">
+                    <h3 class="text-[#2196F3] font-bold text-base mb-1" id="acc-support-pin">...</h3>
+                    <p class="text-black font-bold text-[11px]">Support Pin</p>
+                </div>
+                
+                <div class="bg-white py-3 px-2 rounded-lg border border-[#2196F3] text-center shadow-sm">
+                    <h3 class="text-[#2196F3] font-bold text-base mb-1"><span id="acc-weekly-spent">0</span> ৳</h3>
+                    <p class="text-black font-bold text-[11px]">Weekly Spent</p>
+                </div>
+                
+                <div class="bg-white py-3 px-2 rounded-lg border border-[#2196F3] text-center shadow-sm">
+                    <h3 class="text-[#2196F3] font-bold text-base mb-1" id="acc-total-spent">0</h3>
+                    <p class="text-black font-bold text-[11px]">Total Spent</p>
+                </div>
+                
+                <div class="bg-white py-3 px-2 rounded-lg border border-[#2196F3] text-center shadow-sm">
+                    <h3 class="text-[#2196F3] font-bold text-base mb-1" id="acc-total-orders">0</h3>
+                    <p class="text-black font-bold text-[11px]">Total Order</p>
+                </div>
+            </div>
+
+            <div class="px-4 mb-4">
+                <div class="bg-white shadow-sm">
+                    <div class="px-4 py-3 flex items-center gap-2">
+                        <i class="fas fa-folder-open text-black text-sm"></i>
+                        <h3 class="font-bold text-sm text-black">Account Information</h3>
+                    </div>
+                    <div class="border-t border-gray-100 p-4 space-y-4">
+                        <div class="bg-white rounded-lg border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] py-4 text-center">
+                            <div class="flex items-center justify-center gap-2 mb-1 text-gray-500">
+                                <i class="fas fa-redo-alt text-xs"></i>
+                                <span class="text-sm font-medium">৳<span id="acc-balance-card">0.00</span></span>
+                            </div>
+                            <p class="font-bold text-sm text-black">Available Balance</p>
+                        </div>
+
+                        <div class="bg-white rounded-lg border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] py-4 text-center">
+                            <div class="flex justify-center mb-2">
+                                <div class="relative text-[#007bff]">
+                                    <i class="fas fa-certificate text-4xl"></i>
+                                    <i class="fas fa-check text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-sm"></i>
+                                </div>
+                            </div>
+                            <p class="font-bold text-sm text-black">Account Verified!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-4 mb-6">
+                <div class="bg-white shadow-sm">
+                    <div class="px-4 py-3 flex items-center gap-2">
+                        <i class="fas fa-info-circle text-black text-sm"></i>
+                        <h3 class="font-bold text-sm text-black">User Information</h3>
+                    </div>
+                    <div class="border-t border-gray-100 p-4">
+                        <p class="text-[11px] font-bold text-black mb-2">email : <span id="acc-email" class="font-bold text-black">user@email.com</span></p>
+                        <p class="text-[11px] font-bold text-black">Phone : <span id="acc-phone" class="font-bold text-black">Not Available</span></p>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                     <button onclick="handleLogout()" class="w-full p-3 bg-white shadow-sm flex items-center justify-center gap-2 hover:bg-red-50 transition duration-300">
+                        <i class="fas fa-sign-out-alt text-red-500"></i>
+                        <span class="font-bold text-sm text-red-500">Log Out</span>
+                     </button>
+                </div>
+            </div>
+        </section>
+</main>
+
+
+    <div id="fab-container" class="fixed bottom-20 right-4 z-50">
+        <div class="flex items-center gap-2">
+            <div id="fab-help-text" class="bg-red-500 text-white text-xs font-semibold px-2 py-1.5 rounded-lg shadow-md transition-opacity duration-300">
+                সাহায্য লাগবে ?
+            </div>
+            <div class="relative flex flex-col items-center">
+                <div id="fab-options" class="absolute bottom-14 space-y-1.5 transition-all duration-300 ease-out transform translate-y-4 opacity-0 pointer-events-none">
+                    <a id="link-whatsapp" href="#" target="_blank" class="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-lg hover:bg-gray-100 no-underline">
+                        <i class="fab fa-whatsapp text-xl text-[#25D366]"></i>
+                    </a>
+                    <a id="link-telegram" href="#" target="_blank" class="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-lg hover:bg-gray-100 no-underline">
+                        <i class="fab fa-telegram-plane text-xl text-[#0088cc]"></i>
+                    </a>
+                </div>
+                <button id="fab-toggler" onclick="toggleFabMenu()" class="relative w-12 h-12 bg-red-500 rounded-full flex items-center justify-center text-white text-xl shadow-xl transition-all duration-300 ease-in-out hover:bg-red-600 focus:outline-none">
+                    <i id="fab-icon-open" class="fas fa-phone-alt transition-all duration-300 transform"></i>
+                    <i id="fab-icon-close" class="fas fa-times absolute transition-all duration-300 transform scale-0 opacity-0 -rotate-180"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="fixed bottom-0 w-full bg-white/95 backdrop-blur-sm border-t border-gray-100/50 py-3 px-6 shadow-[0_-5px_20px_rgba(0,0,0,0.03)] z-40 max-w-md mx-auto left-0 right-0 rounded-t-[20px]">
+        <div class="flex justify-between items-center">
+            <a href="/" class="nav-item flex flex-col items-center gap-1.5 text-gray-700 transition-all duration-300 hover:text-sky-500  group" id="nav-home">
+                <img src="https://img.icons8.com/?size=100&id=OXVih02dFZ53&format=png&color=000000" class="w-6 h-6 group-hover:scale-110 transition-transform duration-300" alt="Home">
+                <span class="text-[10px] font-semibold tracking-wide">Home</span>
+            </a>
+            <a href="/tutorial.html" class="nav-item flex flex-col items-center gap-1.5 text-gray-700 transition-all duration-300 hover:text-sky-500  group" id="nav-tutorial">
+                <img src="https://img.icons8.com/?size=100&id=15979&format=png&color=000000" class="w-6 h-6 group-hover:scale-110 transition-transform duration-300" alt="Tutorial">
+                <span class="text-[10px] font-semibold tracking-wide">Tutorial</span>
+            </a>
+            <a href="/addmoney.html" class="nav-item flex flex-col items-center gap-1.5 text-gray-700 transition-all duration-300 hover:text-sky-500  group" id="nav-addmoney">
+                <img src="https://img.icons8.com/?size=100&id=95782&format=png&color=000000" class="w-6 h-6 group-hover:scale-110 transition-transform duration-300" alt="Add Money">
+                <span class="text-[10px] font-semibold tracking-wide">Add Money</span>
+            </a>
+            <a href="/history.html" class="nav-item flex flex-col items-center gap-1.5 text-gray-700 transition-all duration-300 hover:text-sky-500  group" id="nav-history">
+                <img src="https://img.icons8.com/?size=100&id=41117&format=png&color=000000" class="w-6 h-6 group-hover:scale-110 transition-transform duration-300" alt="History">
+                <span class="text-[10px] font-semibold tracking-wide">History</span>
+            </a>
+            <a href="/account.html" class="nav-item flex flex-col items-center gap-1.5 text-gray-700 transition-all duration-300 hover:text-sky-500 active-tab group" id="nav-account">
+                <img src="https://img.icons8.com/?size=100&id=7820&format=png&color=000000" class="w-6 h-6 group-hover:scale-110 transition-transform duration-300" alt="Account">
+                <span class="text-[10px] font-semibold tracking-wide">Account</span>
+            </a>
+        </div>
+    </nav>
+</div>
+<script src="/js/app.js"></script>
+</body>
+</html>

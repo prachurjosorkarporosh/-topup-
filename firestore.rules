@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == 'sorkarporosh6@gmail.com') ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // --- USERS ---
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // --- SETTINGS ---
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- ADMIN CONFIG (Payment numbers, etc.) ---
+    match /admin/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- SERVICES & CATALOG ---
+    match /services/{serviceId} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      match /products/{productId} {
+        allow read: if true;
+        allow update: if isSignedIn() || isAdmin();
+        allow write: if isAdmin();
+
+        match /stock/{stockId} {
+          allow read, write: if isSignedIn() || isAdmin();
+        }
+      }
+    }
+
+    // --- CATEGORIES ---
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- BANNERS ---
+    match /banners/{bannerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- TUTORIALS ---
+    match /tutorials/{tutorialId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- ORDERS ---
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // --- DEPOSITS ---
+    match /deposits/{depositId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // --- ADMINS LIST ---
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}
