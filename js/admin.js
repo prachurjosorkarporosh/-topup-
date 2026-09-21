@@ -13,9 +13,57 @@ function adminLogin() {
     if(!email || !pass) return Swal.fire('Error', 'Empty Credentials', 'warning');
     auth.signInWithEmailAndPassword(email, pass).catch(err => Swal.fire('Failed', err.message, 'error'));
 }
+const ADMIN_EMAILS = ['sorkarporosh6@gmail.com', 'prachurjosorkarporosh@gmail.com'];
+
+function checkAdminAccess(user) {
+    if (!user) return false;
+    const email = (user.email || '').toLowerCase().trim();
+    return ADMIN_EMAILS.includes(email);
+}
+
 auth.onAuthStateChanged(user => {
-    if(user) { document.getElementById('login-sec').classList.add('hidden'); document.getElementById('admin-panel').classList.remove('hidden'); loadAllData(); } 
-    else { document.getElementById('login-sec').classList.remove('hidden'); document.getElementById('admin-panel').classList.add('hidden'); }
+    if(user) {
+        // Verify user is authorized admin
+        db.collection("admins").doc(user.uid).get().then(doc => {
+            const isDocAdmin = doc.exists;
+            const isEmailAdmin = checkAdminAccess(user);
+            
+            if(isEmailAdmin || isDocAdmin) {
+                // Ensure document exists in admins collection for fast rule checks
+                if(!isDocAdmin) {
+                    db.collection("admins").doc(user.uid).set({
+                        email: user.email,
+                        role: 'admin',
+                        grantedAt: new Date()
+                    }).catch(e => console.log('Admin registration sync:', e));
+                }
+                document.getElementById('login-sec').classList.add('hidden');
+                document.getElementById('admin-panel').classList.remove('hidden');
+                loadAllData();
+            } else {
+                auth.signOut().then(() => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Access Denied',
+                        text: 'This account (' + user.email + ') does not have admin permissions.'
+                    });
+                });
+            }
+        }).catch(err => {
+            if(checkAdminAccess(user)) {
+                document.getElementById('login-sec').classList.add('hidden');
+                document.getElementById('admin-panel').classList.remove('hidden');
+                loadAllData();
+            } else {
+                auth.signOut().then(() => {
+                    Swal.fire('Error', 'Unauthorized admin account', 'error');
+                });
+            }
+        });
+    } else {
+        document.getElementById('login-sec').classList.remove('hidden');
+        document.getElementById('admin-panel').classList.add('hidden');
+    }
 });
 function logout() { auth.signOut().then(() => location.reload()); }
 

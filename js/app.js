@@ -176,9 +176,46 @@
         }); 
     }
 
+    const ADMIN_EMAILS = ['sorkarporosh6@gmail.com', 'prachurjosorkarporosh@gmail.com'];
+
+    function checkAdminStatus(user) {
+        const adminBtn = document.getElementById('header-admin-btn');
+        const accAdminContainer = document.getElementById('acc-admin-btn-container');
+
+        if (!user) {
+            if (adminBtn) adminBtn.classList.add('hidden');
+            if (accAdminContainer) accAdminContainer.classList.add('hidden');
+            return;
+        }
+
+        const userEmail = (user.email || '').toLowerCase().trim();
+        const isEmailAdmin = ADMIN_EMAILS.includes(userEmail);
+
+        if (isEmailAdmin) {
+            if (adminBtn) adminBtn.classList.remove('hidden');
+            if (accAdminContainer) accAdminContainer.classList.remove('hidden');
+            return;
+        }
+
+        // Also check if admin doc exists in Firestore /admins/{uid}
+        db.collection('admins').doc(user.uid).get().then(doc => {
+            if (doc.exists) {
+                if (adminBtn) adminBtn.classList.remove('hidden');
+                if (accAdminContainer) accAdminContainer.classList.remove('hidden');
+            } else {
+                if (adminBtn) adminBtn.classList.add('hidden');
+                if (accAdminContainer) accAdminContainer.classList.add('hidden');
+            }
+        }).catch(() => {
+            if (adminBtn) adminBtn.classList.add('hidden');
+            if (accAdminContainer) accAdminContainer.classList.add('hidden');
+        });
+    }
+
     auth.onAuthStateChanged((user) => {
         if (user) {
             currentUser = user;
+            checkAdminStatus(user);
             if (window.location.pathname.includes('auth')) {
                 const returnUrl = new URLSearchParams(window.location.search).get('returnUrl') || '/';
                 window.location.href = returnUrl;
@@ -199,6 +236,7 @@
             if(document.getElementById('history-list')) loadHistory();
         } else {
             currentUser = null;
+            checkAdminStatus(null);
             const loginContainer = document.getElementById('header-login-container');
             const balanceContainer = document.getElementById('header-balance-container');
             if(loginContainer) loginContainer.classList.remove('hidden');

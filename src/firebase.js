@@ -2,7 +2,7 @@ import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
 import 'firebase/compat/database';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 if (!firebase.apps.length) {
@@ -12,14 +12,25 @@ const app = firebase.app();
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Attach named database delegate
+// Enable long-polling & robust network transport in iframe / restricted networks
 try {
   if (firebaseConfig.firestoreDatabaseId) {
-    db._delegate = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-    console.log("Connected to named Firestore database:", firebaseConfig.firestoreDatabaseId);
+    const namedDb = initializeFirestore(app, {
+      experimentalAutoDetectLongPolling: true,
+      useFetchStreams: false,
+    }, firebaseConfig.firestoreDatabaseId);
+    db._delegate = namedDb;
+    console.log("Connected to named Firestore database with auto long-polling:", firebaseConfig.firestoreDatabaseId);
   }
 } catch(err) {
-  console.error("Failed to attach named Firestore database:", err);
+  try {
+    if (firebaseConfig.firestoreDatabaseId) {
+      db._delegate = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+      console.log("Connected to named Firestore database:", firebaseConfig.firestoreDatabaseId);
+    }
+  } catch(innerErr) {
+    console.warn("Firestore named database attachment warning:", innerErr);
+  }
 }
 
 // Error handler helper according to skill
@@ -66,18 +77,19 @@ async function testConnection() {
 }
 testConnection();
 
-window.firebase = firebase;
-window.firebaseConfig = firebaseConfig;
-window.db = db;
-window.auth = auth;
+const globalScope = typeof window !== 'undefined' ? window : globalThis;
+globalScope.firebase = firebase;
+globalScope.firebaseConfig = firebaseConfig;
+globalScope.db = db;
+globalScope.auth = auth;
 let rtdb = null;
 try {
   if (firebaseConfig.databaseURL && typeof firebase.database === 'function') {
     rtdb = firebase.database();
   }
 } catch(e) {}
-window.rtdb = rtdb;
-window.handleFirestoreError = handleFirestoreError;
-window.OperationType = OperationType;
+globalScope.rtdb = rtdb;
+globalScope.handleFirestoreError = handleFirestoreError;
+globalScope.OperationType = OperationType;
 
 export { firebase, db, auth, rtdb, firebaseConfig, handleFirestoreError, OperationType };
